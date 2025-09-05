@@ -1,0 +1,18 @@
+{
+  "patterns": {},
+  "decisions": {},
+  "codeExamples": {},
+  "fileStructure": {},
+  "conventions": {
+    "naming": {},
+    "fileOrganization": [],
+    "codeStyle": [],
+    "testingApproach": ""
+  },
+  "architecture": {
+    "description": "",
+    "components": [],
+    "dataFlow": [],
+    "constraints": []
+  }
+}

@@ -1,0 +1,337 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Calendar System - Development Guide
+
+## Project Overview
+This is a SpoqPlus admin system built with CodeIgniter 4 framework for managing group exercise classes and schedules.
+
+## Key File Structure
+
+### Main Calendar View
+- [app/Views/tchr/tcoffmain/grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php) - Main calendar interface with modals for class/schedule management
+
+### Controllers
+- [app/Controllers/Tbcoffmain.php](mdc:app/Controllers/Tbcoffmain.php) - Main controller handling calendar operations and AJAX endpoints
+
+### Models
+- [app/Models/CalendarModel.php](mdc:app/Models/CalendarModel.php) - Database operations for calendar, schedules, and related data
+
+## Database Schema
+
+### Main Tables
+- `gx_item_tbl` - Group class templates/items
+- `gx_sched_mgmt_tbl` - Individual schedule instances
+- `gx_schd_event_tbl` - Schedule-specific ticket permissions (copied from item events)
+- `gx_schd_pay_tbl` - Schedule-specific payment rates (copied from item payment rates)
+- `gx_item_event_tbl` - Item template ticket permissions
+- `gx_clas_pay_tbl` - Item template payment rates
+
+### Key Column Mappings
+- Group class payment columns: `CLAS_ATD_CNT_S`, `CLAS_ATD_CNT_E`
+- Schedule payment columns: `CLAS_ATD_NUM_S`, `CLAS_ATD_NUM_E`
+- Settlement flags: `PAY_FOR_ZERO_YN`, `USE_PAY_RATE_YN`
+
+## Critical Development Patterns
+
+### 1. Drag & Drop Schedule Creation
+When dragging left-side items to calendar, the system:
+1. Creates main schedule in `gx_sched_mgmt_tbl`
+2. Copies related data from item tables to schedule tables
+3. Uses `copy_item_events_to_schedule()` and `copy_item_pay_to_schedule()` functions
+
+### 2. Modal Management
+- Group class editing: Uses item-based functions and data
+- Schedule editing: Uses schedule-based functions with similar UI
+- Always check for duplicate function definitions at file end
+- Settlement modals are shared between group class and schedule editing
+
+### 3. AJAX Patterns
+- Always use `dataType: 'text'` and parse with `$.parseJSON(result)`
+- Include login expiration checks: `if (result.substr(0,8) == '<script>')`
+- Use consistent error handling with `.fail()` callbacks
+
+### 4. Function Naming Conventions
+- Group class functions: `loadSettlementSettings()`, `openClassImageModal()`
+- Schedule functions: `loadScheduleSettlementSettings()`, `openScheduleClassImageModal()`
+- Always create schedule-specific versions when needed
+
+## Common Issues & Solutions
+
+### Duplicate Functions
+- Check end of `grp_schedule.php` for duplicate function definitions
+- Later function definitions override earlier ones
+- Always search for existing functions before adding new ones
+
+### Image Handling
+- Group class images: `selectClassImage()` - shows original size modal
+- Schedule images: `selectScheduleClassImage()` - shows original size modal
+- Both use shared `showImageModal()` function
+
+### Settlement Settings
+- Group classes use `CLAS_ATD_CNT_S/E` columns
+- Schedules use `CLAS_ATD_NUM_S/E` columns
+- Use `addSettlementRangeWithData()` for consistent UI generation
+
+## Development Best Practices
+
+1. **Always copy working code patterns** - If group class functionality works, copy it for schedules
+2. **Check for function duplicates** - Search entire file before adding functions
+3. **Use consistent AJAX patterns** - Follow existing login checks and error handling
+4. **Test data flow** - Verify data copies correctly from item to schedule tables
+5. **Modal state management** - Properly enable/disable parent modals during child modal operations
+
+## Migration Files
+Schedule-related tables are created via CodeIgniter migrations in:
+- [app/Database/Migrations/](mdc:app/Database/Migrations) directory
+- Use `php spark migrate` to apply schema changes
+
+# SpoqPlus Calendar System - Architecture & Troubleshooting Guide
+
+## 🏗️ Core Architecture
+
+### Key Files
+- **Frontend Calendar**: [public/dist/js/amajs/ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js) - FullCalendar configuration and event handling
+- **Main View**: [app/Views/tchr/tcoffmain/grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php) - Calendar page with controls and modals
+- **Backend Controller**: [app/Controllers/Tbcoffmain.php](mdc:app/Controllers/Tbcoffmain.php) - AJAX endpoints and business logic
+- **Calendar Model**: [app/Models/CalendarModel.php](mdc:app/Models/CalendarModel.php) - Database operations for schedules
+- **Calendar Library**: [app/Libraries/Ama_calendar.php](mdc:app/Libraries/Ama_calendar.php) - Calendar utility functions
+
+### Database Tables
+- `gx_schd_mgmt_tbl` - Main schedule management table
+- `gx_room_mgmt_tbl` - Room management
+- `gx_item_tbl` - Class/item definitions
+
+## 🔄 Data Flow
+
+### Event Loading Process
+1. **Initial Load**: `grp_schedule_proc()` → `Ama_calendar.php` → Database query
+2. **Navigation**: `ajax_call_events()` → Backend AJAX → Event source update
+3. **Room Change**: Similar to navigation but filters by room
+
+### Critical Data Processing
+- All events must have `extendedProps.real_start_time` and `real_end_time` set
+- Time format: "HHMM" (e.g., "0900", "1530")
+- End times may use `end_display` for 1-hour blocks vs actual end time
+
+## ⚠️ Common Issues & Solutions
+
+### 1. Schedule Copy Not Showing Immediately
+**Problem**: Copied schedules appear in DB but not on calendar until navigation
+**Solution**: Always call `refreshCalendarEvents()` after successful copy operations
+```javascript
+// In btn_gx_copy_proc() success callback:
+refreshCalendarEvents();
+```
+
+### 2. Navigation Button Flickering
+**Problem**: Multiple DOM manipulations cause visual flickering
+**Root Cause**: `applyTimeSlotRowspan()` function performs extensive DOM operations
+**Solution**: Disable the function entirely
+```javascript
+// Comment out or remove calls to applyTimeSlotRowspan()
+```
+
+### 3. Time Display Issues
+**Problem**: Times showing as "NaN" or inconsistent formats
+**Causes**:
+- Missing `extendedProps` time data
+- FullCalendar auto-title conflicts with custom titles
+**Solutions**:
+- Ensure all event processing functions set time properties
+- Use `titleFormat: function() { return ''; }` to disable auto-titles
+- Add validation in `doUpdateTitle()` function
+
+### 4. Room Change Not Working After Navigation
+**Problem**: "Next → Today → Room Change" sequence fails
+**Cause**: Inconsistent event data processing between different loading methods
+**Solution**: Standardize time property setting across all event processing functions
+
+## 🛠️ Key Functions Reference
+
+### Calendar Management
+- `refreshCalendarEvents()` - Refresh calendar data only
+- `getCalendarInstance()` - Safely get FullCalendar instance
+- `ajax_call_events(date)` - Load events for specific date range
+- `doUpdateTitle()` - Update calendar title safely
+
+### Event Handling
+- `btn_gx_copy_proc()` - Schedule copy with validation
+- `removeSpecificEventFromDisplay(id)` - Remove single event
+- `reinitializeExternalEvents()` - Reset draggable events after room change
+
+### DOM Operations (Use Carefully)
+- `applyTimeSlotRowspan()` - ⚠️ DISABLED - Causes flickering
+- `updateCustomTitle()` - Title updates (simplified version preferred)
+
+## 🔧 Performance Optimizations Applied
+
+### Rendering Optimizations
+- Disabled progressive event rendering
+- Removed animation delays (`rerenderDelay: 0`)
+- Batch event processing in `eventsSet` callback
+- GPU acceleration disabled for calendar elements
+
+### Event Processing
+- Standardized time property setting
+- Removed redundant AJAX calls
+- Optimized room change logic with debouncing
+
+## 🚫 Anti-Patterns to Avoid
+
+### Never Do
+1. **Multiple DOM manipulations** in rapid succession
+2. **Page reload** (`location.reload()`) for minor updates
+3. **Nested setTimeout** chains for UI updates
+4. **Missing calendar refresh** after data modifications
+5. **Inconsistent time property handling** between functions
+
+### Best Practices
+1. **Always refresh calendar** after data changes
+2. **Use existing utility functions** like `refreshCalendarEvents()`
+3. **Validate date/time data** before processing
+4. **Batch DOM operations** when possible
+5. **Use console logging** for debugging event flows
+
+## 🐛 Debugging Tips
+
+### Essential Console Messages
+- Look for "ajax_call_events" logs for data loading issues
+- Check "doUpdateTitle" logs for title update problems
+- Monitor "refreshCalendarEvents" calls after operations
+
+### Common Debug Scenarios
+1. **Events not loading**: Check room ID and date range parameters
+2. **Flickering**: Look for multiple DOM manipulation calls
+3. **Time display issues**: Verify `extendedProps` data structure
+4. **Copy/delete not reflecting**: Ensure refresh functions are called
+
+## 🔄 Testing Checklist
+
+### Schedule Copy
+- [ ] Copy shows immediately (no need to navigate)
+- [ ] Original week data preserved
+- [ ] Future weeks populated correctly
+- [ ] Calendar refreshes automatically
+
+### Navigation
+- [ ] No flickering on next/prev buttons
+- [ ] Times display correctly
+- [ ] Room changes work immediately
+- [ ] Today button works from any week
+
+### Time Display
+- [ ] No "NaN" in titles
+- [ ] Consistent HH:MM format
+- [ ] Current time indicator visible
+- [ ] Week ranges calculate correctly
+
+This guide should be referenced whenever working on calendar-related features or debugging display issues.
+
+## Core Architecture
+
+### Main Calendar Files
+- **Main View**: [app/Views/tchr/tcoffmain/grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php) - Primary calendar interface with FullCalendar integration
+- **JavaScript Logic**: [public/dist/js/amajs/ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js) - FullCalendar configuration and event handling
+- **Backend Controller**: [app/Controllers/Tbcoffmain.php](mdc:app/Controllers/Tbcoffmain.php) - Calendar data processing and CRUD operations
+- **Data Model**: [app/Models/CalendarModel.php](mdc:app/Models/CalendarModel.php) - Database interactions for schedule management
+- **Calendar Library**: [app/Libraries/Ama_calendar.php](mdc:app/Libraries/Ama_calendar.php) - Calendar utility functions
+
+## Database Schema
+
+### Schedule Table: `gx_schd_mgmt_tbl`
+**Critical Field Mappings** (always use correct names):
+- `GX_CLASS_MIN` (NOT `GX_CLAS_MIN`) - Class duration in minutes
+- `USE_PAY_RATE_YN` (NOT `USEPAYROLLFORMGT_YN`) - Payment rate usage flag
+- `AUTO_CLOSE_MIN` - TIME type field, use format `'00:30:00'` (NOT integer)
+- `AUTO_SHOW_WEEK` - Integer type for week settings
+
+## FullCalendar Event Handling
+
+### Critical Pattern: Always Use `refetchEvents()`
+**✅ CORRECT - Maintains Dynamic Event Source**:
+```javascript
+// After any CRUD operation, use refetchEvents to maintain dynamic room detection
+window.calendar.refetchEvents();
+```
+
+**❌ WRONG - Creates Static Event Sources**:
+```javascript
+// Never use addEventSource after CRUD operations
+ajax_call_events(date); // This breaks room switching
+window.calendar.addEventSource(staticData); // This breaks room switching
+```
+
+### Event Handlers That Must Use `refetchEvents()`:
+- `eventReceive` - When external items are dropped
+- `eventDrop` - When events are moved
+- `eventResize` - When events are resized
+- After any successful AJAX save operation
+
+## Room Management
+
+### Room Change Logic
+Room changes are handled by the `events` function in [ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js):
+```javascript
+events: function(info, successCallback, failureCallback) {
+    var roomId = $('#gx_room_mgmt_sno').val(); // Always gets current room
+    // ... loads data for current room
+}
+```
+
+**Key Point**: The `events` function automatically detects room changes via `$('#gx_room_mgmt_sno').val()`, so `refetchEvents()` will always load the correct room's data.
+
+## Common Issues and Solutions
+
+### Issue: Room Change Not Working After Adding Items
+**Cause**: Using `ajax_call_events()` or `addEventSource()` creates static event sources that don't respect room changes.
+**Solution**: Always use `window.calendar.refetchEvents()` after CRUD operations.
+
+### Issue: Field Not Found in Database
+**Cause**: Using outdated field names that don't match actual database schema.
+**Solution**: Verify field names in actual database table before coding.
+
+### Issue: Calendar Flickering
+**Cause**: Multiple DOM manipulations or redundant event handlers.
+**Solution**: 
+- Minimize DOM changes in calendar event handlers
+- Use debouncing for frequent updates
+- Disable unnecessary rowspan or styling functions
+
+## Development Best Practices
+
+### Before Making Changes
+1. Always verify database schema matches your field names
+2. Test room switching after any calendar modifications
+3. Check console for JavaScript errors
+4. Verify AJAX responses return expected data structure
+
+### Testing Scenarios
+Always test these scenarios after calendar changes:
+1. Room change without any items
+2. Add item from sidebar → Room change
+3. Drag existing event → Room change  
+4. Resize existing event → Room change
+5. Navigate dates → Room change
+
+### Error Prevention
+- Never hardcode room IDs
+- Always use `$('#gx_room_mgmt_sno').val()` for current room
+- Prefer `refetchEvents()` over manual event source manipulation
+- Validate field names against actual database schema
+
+## File Dependencies
+
+### Critical Dependencies
+- jQuery and FullCalendar must be loaded before [ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js)
+- [CalendarModel.php](mdc:app/Models/CalendarModel.php) depends on correct database field names
+- [grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php) requires proper room selection elements
+
+### Configuration Files
+- Database config: [app/Config/Database.php](mdc:app/Config/Database.php)
+- Routes: [app/Config/Routes.php](mdc:app/Config/Routes.php)
+- Auto-loading: [app/Config/Autoload.php](mdc:app/Config/Autoload.php)
+
+

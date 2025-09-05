@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpoqPlus 얼굴 인식 체크인</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .video-container {
+            position: relative;
+            margin: 30px 0;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .face-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .face-box {
+            position: absolute;
+            border: 3px solid #00ff00;
+            border-radius: 5px;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .face-label {
+            position: absolute;
+            background: rgba(0, 255, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            transform: translateY(-100%);
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #00b09b, #96c93d);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 176, 155, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .status.info {
+            background: rgba(52, 152, 219, 0.1);
+            border: 2px solid #3498db;
+            color: #2980b9;
+        }
+
+        .status.success {
+            background: rgba(46, 204, 113, 0.1);
+            border: 2px solid #2ecc71;
+            color: #27ae60;
+        }
+
+        .status.error {
+            background: rgba(231, 76, 60, 0.1);
+            border: 2px solid #e74c3c;
+            color: #c0392b;
+        }
+
+        .status.warning {
+            background: rgba(241, 196, 15, 0.1);
+            border: 2px solid #f1c40f;
+            color: #d68910;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ecf0f1;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            #videoElement {
+                height: 300px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 SpoqPlus 얼굴 인식</h1>
+            <p>실시간 얼굴 인식 체크인 시스템</p>
+        </div>
+
+        <div class="video-container">
+            <video id="videoElement" autoplay muted playsinline></video>
+            <div class="face-overlay" id="faceOverlay"></div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">
+                📷 웹캠 시작
+            </button>
+            <button id="checkinBtn" class="btn btn-success hidden" disabled>
+                ✅ 체크인 하기
+            </button>
+        </div>
+
+        <div id="status" class="status info">
+            📋 웹캠을 시작하려면 '웹캠 시작' 버튼을 클릭하세요
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div id="faceCount" class="stat-number">0</div>
+                <div class="stat-label">검출된 얼굴</div>
+            </div>
+            <div class="stat-card">
+                <div id="recognitionStatus" class="stat-number">-</div>
+                <div class="stat-label">인식 상태</div>
+            </div>
+            <div class="stat-card">
+                <div id="confidenceScore" class="stat-number">0%</div>
+                <div class="stat-label">신뢰도</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FaceRecognitionApp {
+            constructor() {
+                this.video = document.getElementById('videoElement');
+                this.startBtn = document.getElementById('startBtn');
+                this.checkinBtn = document.getElementById('checkinBtn');
+                this.status = document.getElementById('status');
+                this.faceOverlay = document.getElementById('faceOverlay');
+                
+                this.isStreaming = false;
+                this.isProcessing = false;
+                this.detectionInterval = null;
+                this.lastRecognition = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.startBtn.addEventListener('click', () => this.startWebcam());
+                this.checkinBtn.addEventListener('click', () => this.performCheckin());
+                
+                // 서버 상태 확인
+                this.checkServerStatus();
+            }
+
+            async checkServerStatus() {
+                try {
+                    const response = await fetch('http://localhost:5002/api/face/health');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.updateStatus('success', `🟢 서버 연결됨 (OpenCV ${data.opencv_version})`);
+                    } else {
+                        this.updateStatus('error', '❌ 서버 연결 실패');
+                    }
+                } catch (error) {
+                    this.updateStatus('error', '❌ 서버에 연결할 수 없습니다. Flask 서버를 시작해주세요');
+                }
+            }
+
+            async startWebcam() {
+                try {
+                    this.updateStatus('info', '📷 웹캠 접근 권한을 요청중...');
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'user'
+                        },
+                        audio: false
+                    });
+
+                    this.video.srcObject = stream;
+                    this.isStreaming = true;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.updateStatus('success', '✅ 웹캠이 시작되었습니다. 얼굴을 카메라에 맞춰주세요');
+                        this.startBtn.textContent = '🛑 웹캠 정지';
+                        this.startBtn.onclick = () => this.stopWebcam();
+                        this.checkinBtn.classList.remove('hidden');
+                        
+                        // 얼굴 검출 시작
+                        this.startFaceDetection();
+                    };
+
+                } catch (error) {
+                    console.error('웹캠 접근 오류:', error);
+                    this.updateStatus('error', '❌ 웹캠에 접근할 수 없습니다. 권한을 확인해주세요');
+                }
+            }
+
+            stopWebcam() {
+                if (this.video.srcObject) {
+                    this.video.srcObject.getTracks().forEach(track => track.stop());
+                    this.video.srcObject = null;
+                }
+                
+                if (this.detectionInterval) {
+                    clearInterval(this.detectionInterval);
+                    this.detectionInterval = null;
+                }
+                
+                this.isStreaming = false;
+                this.startBtn.textContent = '📷 웹캠 시작';
+                this.startBtn.onclick = () => this.startWebcam();
+                this.checkinBtn.classList.add('hidden');
+                this.faceOverlay.innerHTML = '';
+                
+                this.updateStatus('info', '📋 웹캠이 정지되었습니다');
+                this.updateStats(0, '-', '0%');
+            }
+
+            startFaceDetection() {
+                this.detectionInterval = setInterval(() => {
+                    if (!this.isProcessing && this.isStreaming) {
+                        this.detectFaces();
+                    }
+                }, 1000); // 1초마다 검출
+            }
+
+            async detectFaces() {
+                try {
+                    this.isProcessing = true;
+                    
+                    // 캔버스에 현재 프레임 캡처
+                    const canvas = document.createElement('canvas');
+                    canvas.width = this.video.videoWidth;
+                    canvas.height = this.video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(this.video, 0, 0);
+                    
+                    // 이미지를 Blob으로 변환
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                    
+                    // 서버로 전송
+                    const formData = new FormData();
+                    formData.append('image', blob, 'frame.jpg');
+                    
+                    const response = await fetch('http://localhost:5002/api/face/detect', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.handleDetectionResult(data);
+                        
+                        // 얼굴이 검출되면 인식 시도
+                        if (data.face_count > 0) {
+                            this.attemptRecognition(formData);
+                        }
+                    } else {
+                        console.error('검출 API 오류:', response.status);
+                    }
+                    
+                } catch (error) {
+                    console.error('얼굴 검출 오류:', error);
+                } finally {
+                    this.isProcessing = false;
+                }
+            }
+
+            async attemptRecognition(formData) {
+                try {
+                    const response = await fetch('http://localhost:5002/api/face/recognize_simulate', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.handleRecognitionResult(data);
+                    }
+                } catch (error) {
+                    console.error('인식 오류:', error);
+                }
+            }
+
+            handleDetectionResult(data) {
+                this.faceOverlay.innerHTML = '';
+                
+                if (data.success && data.faces) {
+                    // 비디오와 실제 이미지 크기 비율 계산
+                    const videoRect = this.video.getBoundingClientRect();
+                    const scaleX = videoRect.width / data.image_size.width;
+                    const scaleY = videoRect.height / data.image_size.height;
+                    
+                    data.faces.forEach((face, index) => {
+                        const faceBox = document.createElement('div');
+                        faceBox.className = 'face-box';
+                        faceBox.style.left = (face.x * scaleX) + 'px';
+                        faceBox.style.top = (face.y * scaleY) + 'px';
+                        faceBox.style.width = (face.width * scaleX) + 'px';
+                        faceBox.style.height = (face.height * scaleY) + 'px';
+                        
+                        const label = document.createElement('div');
+                        label.className = 'face-label';
+                        label.textContent = `얼굴 ${index + 1}`;
+                        label.style.left = (face.x * scaleX) + 'px';
+                        label.style.top = (face.y * scaleY) + 'px';
+                        
+                        this.faceOverlay.appendChild(faceBox);
+                        this.faceOverlay.appendChild(label);
+                    });
+                }
+                
+                this.updateStats(data.face_count, '-', '0%');
+                
+                if (data.face_count > 0) {
+                    this.updateStatus('info', `👁️ ${data.face_count}개의 얼굴이 검출되었습니다`);
+                    this.checkinBtn.disabled = false;
+                } else {
+                    this.updateStatus('warning', '👀 얼굴을 찾을 수 없습니다. 카메라 정면을 봐주세요');
+                    this.checkinBtn.disabled = true;
+                }
+            }
+
+            handleRecognitionResult(data) {
+                if (data.success) {
+                    this.lastRecognition = data;
+                    this.updateStats(
+                        document.getElementById('faceCount').textContent,
+                        data.member_name,
+                        Math.round(data.confidence * 100) + '%'
+                    );
+                    this.updateStatus('success', 
+                        `✅ ${data.member_name}님이 인식되었습니다 (신뢰도: ${Math.round(data.confidence * 100)}%)`
+                    );
+                } else {
+                    this.updateStats(
+                        document.getElementById('faceCount').textContent,
+                        '미인식',
+                        '0%'
+                    );
+                }
+            }
+
+            async performCheckin() {
+                if (!this.lastRecognition) {
+                    this.updateStatus('warning', '⚠️ 먼저 얼굴 인식이 필요합니다');
+                    return;
+                }
+                
+                this.checkinBtn.innerHTML = '<div class="loading"></div>체크인 중...';
+                this.checkinBtn.disabled = true;
+                
+                try {
+                    // 실제 체크인 로직 (DB 저장 등)
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // 시뮬레이션
+                    
+                    this.updateStatus('success', 
+                        `🎉 ${this.lastRecognition.member_name}님 체크인이 완료되었습니다!`
+                    );
+                    
+                    // 3초 후 리셋
+                    setTimeout(() => {
+                        this.checkinBtn.innerHTML = '✅ 체크인 하기';
+                        this.checkinBtn.disabled = false;
+                        this.lastRecognition = null;
+                    }, 3000);
+                    
+                } catch (error) {
+                    this.updateStatus('error', '❌ 체크인 처리 중 오류가 발생했습니다');
+                    this.checkinBtn.innerHTML = '✅ 체크인 하기';
+                    this.checkinBtn.disabled = false;
+                }
+            }
+
+            updateStatus(type, message) {
+                this.status.className = `status ${type}`;
+                this.status.textContent = message;
+            }
+
+            updateStats(faceCount, recognition, confidence) {
+                document.getElementById('faceCount').textContent = faceCount;
+                document.getElementById('recognitionStatus').textContent = recognition;
+                document.getElementById('confidenceScore').textContent = confidence;
+            }
+        }
+
+        // 앱 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            new FaceRecognitionApp();
+        });
+    </script>
+</body>
+</html> 

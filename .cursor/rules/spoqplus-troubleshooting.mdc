@@ -1,0 +1,147 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Troubleshooting Guide
+
+## Common Issues Encountered
+
+### 1. Schedule Data Not Copying from Group Classes
+**Problem**: When dragging items to calendar, associated data (tickets, payment rates) not copying.
+
+**Root Cause**: Missing copy functions in schedule creation process.
+
+**Solution**: 
+- Ensure [app/Libraries/Ama_calendar.php](mdc:app/Libraries/Ama_calendar.php) calls copy functions after schedule creation
+- Add calls to `copy_item_events_to_schedule()` and `copy_item_pay_to_schedule()`
+- Verify functions exist in [app/Models/CalendarModel.php](mdc:app/Models/CalendarModel.php)
+
+### 2. Settlement Settings Not Loading in Schedule Modals
+**Problem**: Settlement configuration popup shows empty or incorrect data.
+
+**Root Cause**: Multiple issues:
+- Duplicate function definitions overriding correct implementations
+- Wrong column name mappings between group classes and schedules
+- Incorrect AJAX response handling
+
+**Solution**:
+```javascript
+// Check for duplicate functions at end of grp_schedule.php
+// Use correct column mappings:
+// Group class: CLAS_ATD_CNT_S, CLAS_ATD_CNT_E  
+// Schedule: CLAS_ATD_NUM_S, CLAS_ATD_NUM_E
+```
+
+### 3. Image Click Functions Undefined
+**Problem**: `selectScheduleClassImage is not defined` error.
+
+**Root Cause**: Missing function definition for schedule image handling.
+
+**Solution**: 
+- Add both `selectClassImage()` and `selectScheduleClassImage()` functions
+- Implement `showImageModal()` for original size image viewing
+- Ensure onclick handlers point to correct function names
+
+### 4. Database Table Missing Errors
+**Problem**: "Table doesn't exist" errors for schedule-related tables.
+
+**Root Cause**: Missing migration files or incorrect table structure.
+
+**Solution**:
+```bash
+# Run migrations to create missing tables
+php spark migrate
+```
+
+**Create migration files for**:
+- `gx_schd_event_tbl` (schedule ticket permissions)
+- `gx_schd_pay_tbl` (schedule payment rates)
+
+### 5. Primary Key Constraint Violations
+**Problem**: "Duplicate entry for key 'PRIMARY'" when saving schedule data.
+
+**Root Cause**: Incorrect primary key structure or missing DELETE before INSERT.
+
+**Solution**:
+- Use composite primary keys where needed
+- Implement DELETE before INSERT pattern for updates
+- Verify table schema matches actual database structure
+
+## Debugging Strategies
+
+### 1. Console Logging Patterns
+```javascript
+// Use consistent logging prefixes
+console.log('💰 Settlement data:', data);  // Payment/settlement
+console.log('🔥 Debug:', info);            // General debugging  
+console.log('🟠 Modal:', action);          // Modal operations
+```
+
+### 2. AJAX Response Checking
+```javascript
+// Always check for login expiration
+if (result.substr(0,8) == '<script>') {
+    alert('로그인이 만료 되었습니다.');
+    location.href='/tlogin';
+    return;
+}
+
+// Parse and validate response
+var data = $.parseJSON(result);
+if (data['result'] == 'true') {
+    // Success handling
+} else {
+    console.log('Error:', data['message']);
+}
+```
+
+### 3. Function Existence Verification
+```javascript
+// Check if functions exist before calling
+if (typeof addSettlementRangeWithData === 'function') {
+    addSettlementRangeWithData(start, end, rate);
+} else {
+    console.error('Function not defined');
+}
+```
+
+## Performance & Optimization
+
+### 1. Modal Management
+- Always disable parent modals when opening child modals
+- Re-enable parent modals when child modals close
+- Clean up event listeners to prevent memory leaks
+
+### 2. Data Loading
+- Use parallel AJAX calls when possible
+- Cache frequently accessed data
+- Minimize DOM manipulation in loops
+
+### 3. Error Handling
+- Implement fallback mechanisms for critical functions
+- Provide user-friendly error messages
+- Log detailed errors for debugging
+
+## Testing Checklist
+
+### Schedule Creation
+- [ ] Drag item from left panel to calendar
+- [ ] Verify main schedule created in database
+- [ ] Check ticket permissions copied correctly  
+- [ ] Confirm payment rates transferred
+- [ ] Test schedule modification and deletion
+
+### Modal Functionality
+- [ ] Group class editing modal opens
+- [ ] Schedule editing modal opens  
+- [ ] Settlement settings load correctly
+- [ ] Image viewing works for both modals
+- [ ] Parent modals properly disabled/enabled
+
+### Data Integrity
+- [ ] No duplicate function definitions
+- [ ] Correct column mappings used
+- [ ] Primary key constraints respected
+- [ ] Foreign key relationships maintained
+

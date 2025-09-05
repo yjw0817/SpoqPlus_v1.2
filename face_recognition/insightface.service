@@ -1,0 +1,44 @@
+[Unit]
+Description=InsightFace Face Recognition Service
+After=network.target mysql.service mariadb.service
+Wants=mysql.service mariadb.service
+
+[Service]
+Type=exec
+User=www-data
+Group=www-data
+WorkingDirectory=/mnt/d/Projects/html/SpoqPlus_Color_Admin_Except_Mobile_claude2/face_recognition
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="FACE_PRODUCTION=True"
+Environment="FACE_DEBUG=False"
+
+# Gunicorn 실행 명령
+ExecStart=/usr/local/bin/gunicorn wsgi:application \
+    --workers 4 \
+    --worker-class sync \
+    --bind 0.0.0.0:5002 \
+    --timeout 120 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --access-logfile /var/log/insightface/access.log \
+    --error-logfile /var/log/insightface/error.log \
+    --log-level info \
+    --worker-tmp-dir /dev/shm
+
+# 재시작 정책
+Restart=always
+RestartSec=10
+
+# 프로세스 제한
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 시그널 처리
+KillMode=mixed
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

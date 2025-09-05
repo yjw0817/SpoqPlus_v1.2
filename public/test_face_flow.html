@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Recognition Flow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Face Recognition Flow Test</h1>
+    
+    <div class="section">
+        <h2>1. Direct InsightFace API Test (Port 5002)</h2>
+        <button onclick="testInsightFace()">Test InsightFace API</button>
+        <div id="insightface-result" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. FaceTest Controller Test</h2>
+        <button onclick="testFaceController()">Test FaceTest Controller</button>
+        <div id="controller-result" class="log"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Full Flow Test (Webcam)</h2>
+        <button onclick="startWebcam()">Start Webcam</button>
+        <button onclick="captureAndTest()" disabled id="capture-btn">Capture & Test</button>
+        <video id="video" width="320" height="240" style="display:none;"></video>
+        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+        <div id="flow-result" class="log"></div>
+    </div>
+
+    <script>
+        // Test image (1x1 red pixel)
+        const testImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        
+        // 1. Direct InsightFace Test
+        async function testInsightFace() {
+            const resultDiv = document.getElementById('insightface-result');
+            resultDiv.innerHTML = 'Testing InsightFace API directly...';
+            
+            try {
+                const response = await fetch('http://localhost:5002/api/face/detect_for_registration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: testImage
+                    })
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = `<div class="${result.success ? 'success' : 'error'}">
+                    Status: ${response.status}<br>
+                    Response: <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // 2. FaceTest Controller Test
+        async function testFaceController() {
+            const resultDiv = document.getElementById('controller-result');
+            resultDiv.innerHTML = 'Testing FaceTest Controller...';
+            
+            try {
+                const response = await fetch('/FaceTest/recognize_for_registration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: testImage
+                    })
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = `<div class="${result.success ? 'success' : 'error'}">
+                    Status: ${response.status}<br>
+                    Response: <pre>${JSON.stringify(result, null, 2)}</pre>
+                </div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // 3. Webcam Test
+        let stream = null;
+        
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                video.style.display = 'block';
+                video.play();
+                document.getElementById('capture-btn').disabled = false;
+            } catch (error) {
+                alert('Camera access error: ' + error.message);
+            }
+        }
+        
+        async function captureAndTest() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.drawImage(video, 0, 0, 320, 240);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const base64 = dataUrl.split(',')[1];
+            
+            const resultDiv = document.getElementById('flow-result');
+            resultDiv.innerHTML = 'Processing captured image...';
+            
+            try {
+                // Test with FaceTest controller
+                const response = await fetch('/FaceTest/recognize_for_registration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: base64
+                    })
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = `<div class="${result.success ? 'success' : 'error'}">
+                    <h3>Face Detection Result:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                    ${result.face_data ? `<p>Embedding size: ${result.face_data.face_encoding.length}</p>` : ''}
+                </div>`;
+                
+                // Stop webcam
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.style.display = 'none';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker4 Test</title>
+    <link rel="stylesheet" href="/assets/locker4/css/index.css">
+</head>
+<body>
+    <h1>Locker4 Vue App Test</h1>
+    
+    <div id="locker4-app"></div>
+    
+    <script>
+    // Test configuration
+    window.LockerConfig = {
+        apiUrl: '/api/locker',
+        baseUrl: '/',
+        csrfToken: 'test-token',
+        csrfHeader: 'X-CSRF-TOKEN',
+        csrfHash: 'test-hash',
+        companyCode: '001',
+        officeCode: '001',
+        user: {
+            id: 'test-user',
+            name: 'Test User',
+            role: 'admin',
+            isLoggedIn: true
+        },
+        settings: {
+            dateFormat: 'YYYY-MM-DD',
+            timeFormat: 'HH:mm:ss',
+            locale: 'ko-KR',
+            currency: 'KRW'
+        },
+        features: {
+            enableApi: true,
+            enableRealtime: false,
+            enableDebugMode: true
+        }
+    };
+    
+    console.log('[Test] LockerConfig:', window.LockerConfig);
+    </script>
+    
+    <script type="module" src="/assets/locker4/js/index.js"></script>
+    
+    <script>
+    // Check if app mounted after 2 seconds
+    setTimeout(() => {
+        const app = document.getElementById('locker4-app');
+        if (app && app.children.length > 0) {
+            console.log('[Test] Vue app mounted successfully!');
+        } else {
+            console.error('[Test] Vue app failed to mount');
+            console.log('[Test] App element:', app);
+        }
+    }, 2000);
+    </script>
+</body>
+</html>

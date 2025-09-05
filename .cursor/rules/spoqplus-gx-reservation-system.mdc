@@ -1,0 +1,142 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus GX Reservation System Development Guide
+
+## Project Overview
+SpoqPlus Color Admin is a CodeIgniter 4-based fitness center management system with separate interfaces for admin, instructors, and members. The system manages GX (Group Exercise) classes, schedules, and member reservations.
+
+## Key File Structure
+
+### Core Configuration
+- [app/Config/App.php](mdc:app/Config/App.php) - Main application configuration
+- [public/index.php](mdc:public/index.php) - Entry point for web requests
+- [app/Config/Routes.php](mdc:app/Config/Routes.php) - URL routing configuration
+
+### Controllers
+- [app/Controllers/Admin.php](mdc:app/Controllers/Admin.php) - Admin panel controller
+- [app/Controllers/Tmemmain.php](mdc:app/Controllers/Tmemmain.php) - Mobile member interface
+- [app/Controllers/Manage.php](mdc:app/Controllers/Manage.php) - Management functions
+- [app/Controllers/Mobile.php](mdc:app/Controllers/Mobile.php) - Mobile API endpoints
+
+### Models
+- [app/Models/AdminModel.php](mdc:app/Models/AdminModel.php) - Admin data operations
+- [app/Models/AttdModel.php](mdc:app/Models/AttdModel.php) - Attendance management
+- [app/Models/EventModel.php](mdc:app/Models/EventModel.php) - Event/schedule management
+
+### Views Structure
+- [app/Views/mobile_p/](mdc:app/Views/mobile_p) - Mobile member views
+- [app/Views/tmobile_p/](mdc:app/Views/tmobile_p) - Mobile instructor views
+- [app/Views/admin/](mdc:app/Views/admin) - Admin panel views
+- [app/Views/inc_p/](mdc:app/Views/inc_p) - Mobile shared components
+
+## GX System Database Schema
+
+### Core GX Tables
+- `gx_schd_mgmt_tbl` - GX schedule management
+- `gx_item_tbl` - GX class items/types
+- `gx_room_mgmt_tbl` - Room management
+- `gx_clas_img_tbl` - Class images
+
+### Required New Table for Reservations
+```sql
+CREATE TABLE gx_member_reservation_tbl (
+    rsv_id int(11) NOT NULL AUTO_INCREMENT,
+    schd_id int(11) NOT NULL,
+    mem_id varchar(50) NOT NULL,
+    rsv_status char(2) DEFAULT '00',
+    rsv_date datetime DEFAULT CURRENT_TIMESTAMP,
+    attendance_status char(2) DEFAULT '00',
+    PRIMARY KEY (rsv_id)
+);
+```
+
+## Development Patterns
+
+### Controller Methods
+- Use `index()` for main pages
+- Use `ajax_*()` prefix for AJAX endpoints
+- Return JSON responses for API calls
+- Include proper error handling with try-catch blocks
+
+### View Files
+- Mobile views use `_p` suffix (e.g., `mobile_p/`)
+- Include shared components from `inc_p/` for mobile
+- Use consistent modal naming: `*Modal`, `*_modal`
+
+### JavaScript Patterns
+- Use jQuery for DOM manipulation
+- AJAX calls should include error handling
+- Modal functions follow pattern: `show*Modal()`, `hide*Modal()`
+- Form validation before submission
+
+## GX Reservation System Components
+
+### Member Interface Files
+- [app/Views/mobile_p/gx_schedule.php](mdc:app/Views/mobile_p/gx_schedule.php) - Schedule viewing
+- [app/Views/mobile_p/gx_reservation.php](mdc:app/Views/mobile_p/gx_reservation.php) - Reservation interface
+- [app/Views/mobile_p/my_reservations.php](mdc:app/Views/mobile_p/my_reservations.php) - User's reservations
+
+### Instructor Interface Files
+- [app/Views/tmobile_p/gx_class_management.php](mdc:app/Views/tmobile_p/gx_class_management.php) - Class management
+- [app/Views/tmobile_p/attendance_check.php](mdc:app/Views/tmobile_p/attendance_check.php) - Attendance marking
+
+### API Endpoints
+- `/mobile/gx_schedule_list` - Get available schedules
+- `/mobile/make_reservation` - Create new reservation
+- `/mobile/cancel_reservation` - Cancel existing reservation
+- `/mobile/my_reservation_list` - Get user's reservations
+
+## Function Naming Conventions
+
+### Controller Methods
+- `ajax_get_gx_schedule()` - Retrieve GX schedules
+- `ajax_make_reservation()` - Process reservation
+- `ajax_cancel_reservation()` - Cancel reservation
+- `ajax_get_reservation_status()` - Check reservation status
+
+### JavaScript Functions
+- `loadGxSchedule()` - Load schedule data
+- `showReservationModal()` - Display reservation modal
+- `makeReservation()` - Submit reservation
+- `cancelReservation()` - Cancel reservation
+
+## Common Development Issues
+
+### Session Management
+- Check session validity in controller constructors
+- Use `session()->get('user_id')` for user identification
+- Redirect to login if session invalid
+
+### Database Operations
+- Use model methods for database operations
+- Include proper error handling for DB queries
+- Use transactions for multi-table operations
+
+### Mobile Responsiveness
+- Test on mobile devices
+- Use Bootstrap responsive classes
+- Ensure touch-friendly interface elements
+
+## Best Practices
+
+1. **Security**: Always validate and sanitize input data
+2. **Performance**: Use pagination for large data sets
+3. **UX**: Provide loading indicators for AJAX operations
+4. **Error Handling**: Show user-friendly error messages
+5. **Code Organization**: Group related functions in appropriate models
+6. **Documentation**: Comment complex business logic
+
+## Development Workflow
+
+1. Create/modify controller methods
+2. Add corresponding model methods
+3. Create/update view files
+4. Test functionality thoroughly
+5. Ensure mobile responsiveness
+6. Validate with different user roles
+
+
+

@@ -1,0 +1,233 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Development Patterns & Best Practices
+
+## 🏗️ Project Structure
+
+### CodeIgniter 4 Architecture
+- **Controllers**: [app/Controllers/](mdc:app/Controllers) - Business logic and AJAX endpoints
+- **Models**: [app/Models/](mdc:app/Models) - Database operations and data validation
+- **Views**: [app/Views/](mdc:app/Views) - HTML templates with embedded PHP
+- **Libraries**: [app/Libraries/](mdc:app/Libraries) - Custom utility classes
+- **Public Assets**: [public/](mdc:public) - CSS, JS, images, uploads
+
+### Naming Conventions
+- **Controllers**: PascalCase with descriptive prefixes (e.g., `Tbcoffmain.php` for teacher branch office main)
+- **Methods**: snake_case for controller methods (e.g., `ajax_copy_schedule()`)
+- **Database**: Snake_case with prefixes (e.g., `gx_schd_mgmt_tbl` for GX schedule management table)
+- **JavaScript**: camelCase for functions (e.g., `refreshCalendarEvents()`)
+
+## 🔌 AJAX Patterns
+
+### Standard AJAX Response Format
+```javascript
+// Success response
+{
+    "result": "true",
+    "message": "Operation completed successfully",
+    "data": { /* additional data */ }
+}
+
+// Error response  
+{
+    "result": "false", 
+    "message": "Error description"
+}
+```
+
+### Controller AJAX Methods
+- Prefix with `ajax_` (e.g., `ajax_copy_schedule()`)
+- Always return JSON responses
+- Handle login expiration with script tag detection
+- Use POST method with form-encoded data
+
+### Frontend AJAX Handling
+```javascript
+jQuery.ajax({
+    url: '/controller/ajax_method',
+    type: 'POST',
+    data: params,
+    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+    dataType: 'text', // Parse JSON manually for better error handling
+    success: function(result) {
+        // Check for login expiration
+        if (result.substr(0,8) == '<script>') {
+            alert('로그인이 만료 되었습니다. 다시 로그인해주세요');
+            location.href='/tlogin';
+            return;
+        }
+        
+        json_result = $.parseJSON(result);
+        if (json_result['result'] == 'true') {
+            // Success handling
+        }
+    }
+});
+```
+
+## 🗄️ Database Patterns
+
+### Model Structure
+- One model per main business entity
+- Use parameterized queries to prevent SQL injection
+- Return arrays with data included for consistency
+- Follow naming: `EntityModel.php` (e.g., [CalendarModel.php](mdc:app/Models/CalendarModel.php))
+
+### Query Patterns
+```php
+// Standard query pattern
+public function method_name(array $data)
+{
+    $sql = "SELECT * FROM table_name 
+            WHERE column1 = :param1:
+            AND column2 = :param2:";
+    
+    $query = $this->db->query($sql, [
+        'param1' => $data['param1'],
+        'param2' => $data['param2']
+    ]);
+    
+    return $query->getResultArray();
+}
+```
+
+## 🎨 Frontend Patterns
+
+### Modal Management
+- Use Bootstrap modals with consistent naming: `#modal-{purpose}`
+- Initialize and show modals via JavaScript functions
+- Clear form data when opening modals
+- Handle validation before submission
+
+### Form Validation
+```javascript
+// Client-side validation pattern
+if (!field || field == '') {
+    alertToast('error', 'Field is required');
+    return;
+}
+```
+
+### Toast Notifications
+- Use `alertToast(type, message)` for user feedback
+- Types: 'success', 'error', 'warning', 'info'
+- Prefer toasts over alert() for better UX
+
+## 🎯 Calendar-Specific Patterns
+
+### Event Data Structure
+```javascript
+// Standard event object
+{
+    id: 'unique_id',
+    title: 'Event Title',
+    start: '2025-01-15T09:00:00',
+    end: '2025-01-15T10:00:00',
+    extendedProps: {
+        real_start_time: '0900',  // HHMM format
+        real_end_time: '1000',    // HHMM format
+        // Additional custom properties
+    }
+}
+```
+
+### Data Refresh Patterns
+1. **After Data Modifications**: Always call appropriate refresh functions
+2. **Calendar Events**: Use `refreshCalendarEvents()`
+3. **Sidebar Only**: Use `refreshSidebarOnly()`
+4. **Avoid**: Full page reloads (`location.reload()`)
+
+## 🔒 Security Patterns
+
+### Session Management
+- Check for login expiration in AJAX responses
+- Redirect to login page when session expires
+- Use session cache for user data (`$this->SpoQCahce->getCacheVar()`)
+
+### Input Validation
+- Validate all user inputs on both client and server side
+- Use parameterized queries for database operations
+- Sanitize data before processing
+
+## 🚀 Performance Best Practices
+
+### JavaScript Optimization
+- Minimize DOM manipulations
+- Use event delegation for dynamic content
+- Cache jQuery selectors when used multiple times
+- Avoid synchronous AJAX calls
+
+### Database Optimization  
+- Use specific column names instead of SELECT *
+- Add proper indexes for frequently queried columns
+- Limit result sets when appropriate
+- Use transactions for related operations
+
+### Asset Management
+- Minify CSS/JS for production
+- Use CDN for external libraries
+- Optimize images before uploading
+- Implement browser caching
+
+## 🐛 Error Handling
+
+### Frontend Error Handling
+```javascript
+.fail((error) => {
+    console.log('통신실패', error);
+    alert('로그인이 만료 되었습니다. 다시 로그인해주세요');
+    location.href='/tlogin';
+});
+```
+
+### Backend Error Handling
+```php
+try {
+    // Database operations
+    $result = $model->method($data);
+    
+    $return_json['result'] = 'true';
+} catch (Exception $e) {
+    $return_json['result'] = 'false';
+    $return_json['message'] = $e->getMessage();
+}
+
+return json_encode($return_json);
+```
+
+## 📝 Documentation Standards
+
+### Code Comments
+- Use Korean for business logic explanations
+- Document complex algorithms and business rules
+- Include parameter descriptions for public methods
+- Add TODO comments for future improvements
+
+### Function Documentation
+```php
+/**
+ * 스케쥴 복사 처리
+ * @param array $data - copy_sdate, copy_edate, gx_room_mgmt_sno
+ * @return string JSON response
+ */
+```
+
+## 🔄 Version Control Patterns
+
+### Commit Messages
+- Use Korean for business feature descriptions
+- Include feature area prefix when relevant
+- Reference issue numbers when applicable
+- Keep commits focused and atomic
+
+### File Organization
+- Group related functionality in same directories
+- Use meaningful file and folder names
+- Separate business logic from presentation
+- Keep configuration files organized
+
+This guide establishes consistent patterns for developing and maintaining the SpoqPlus system.
+

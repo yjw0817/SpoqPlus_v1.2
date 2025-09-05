@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>키오스크 API 테스트 (Standalone)</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .api-config {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .api-config input {
+            width: 100%;
+            max-width: 500px;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-left: 4px solid #dc3545;
+            background: #f8d7da;
+        }
+        .warning {
+            border-left: 4px solid #ffc107;
+            background: #fff3cd;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            display: block;
+            margin: 20px 0;
+        }
+        #canvas {
+            display: none;
+        }
+        .camera-controls {
+            margin: 20px 0;
+        }
+        select, input[type="text"] {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .ticket-list {
+            margin: 20px 0;
+        }
+        .ticket-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .ticket-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .ticket-item.selected {
+            background: #007bff;
+            color: white;
+        }
+        .ticket-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-healthy {
+            background: #28a745;
+        }
+        .status-unhealthy {
+            background: #dc3545;
+        }
+        .test-image-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-image-section h3 {
+            margin-top: 0;
+        }
+        .image-preview {
+            max-width: 200px;
+            margin: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 키오스크 얼굴 인증 API 테스트 (Standalone)</h1>
+        
+        <!-- API 설정 -->
+        <div class="api-config">
+            <h3>⚙️ API 설정</h3>
+            <label>API Base URL:</label>
+            <select id="apiMode" onchange="updateApiUrl()">
+                <option value="main">정식 API (/api/v1/kiosk)</option>
+                <option value="test" selected>테스트 API (/api/v1/kiosk-test)</option>
+            </select>
+            <input type="text" id="apiUrl" value="http://localhost:8080/api/v1/kiosk-test" style="margin-top: 5px; width: 400px;" />
+            
+            <label>API Key:</label>
+            <input type="text" id="apiKey" value="test-api-key" placeholder="API 키를 입력하세요" />
+            
+            <button onclick="checkAPIStatus()">🔍 API 상태 확인</button>
+            
+            <div id="statusResult" class="result" style="margin-top: 10px;"></div>
+        </div>
+        
+        <!-- 카메라 테스트 섹션 -->
+        <div class="test-section">
+            <h2>📷 1. 얼굴 인증 테스트</h2>
+            
+            <div>
+                <label>언어 선택:</label>
+                <select id="language">
+                    <option value="ko">🇰🇷 한국어</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="zh">🇨🇳 中文</option>
+                </select>
+                
+                <label>장치 ID:</label>
+                <input type="text" id="deviceId" value="KIOSK_TEST_001" />
+                
+                <label>위치:</label>
+                <input type="text" id="location" value="TEST_LOCATION" />
+            </div>
+            
+            <div class="camera-controls">
+                <button onclick="startCamera()">▶️ 카메라 시작</button>
+                <button onclick="captureAndAuth()" id="captureBtn" disabled>📸 얼굴 촬영 및 인증</button>
+                <button onclick="stopCamera()">⏹️ 카메라 중지</button>
+            </div>
+            
+            <video id="video" autoplay></video>
+            <canvas id="canvas"></canvas>
+            
+            <div id="authResult" class="result"></div>
+        </div>
+        
+        <!-- 체크인 테스트 섹션 -->
+        <div class="test-section">
+            <h2>✅ 2. 체크인 처리 테스트</h2>
+            
+            <div id="memberInfo" style="display:none; margin: 20px 0; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                <h3>회원 정보</h3>
+                <div id="memberDetails"></div>
+            </div>
+            
+            <div id="ticketList" class="ticket-list"></div>
+            
+            <button onclick="processCheckin()" disabled id="checkinBtn">✅ 선택한 이용권으로 체크인</button>
+            
+            <div id="checkinResult" class="result"></div>
+        </div>
+        
+        <!-- 시나리오 테스트 -->
+        <div class="test-section">
+            <h2>🧪 3. 시나리오별 테스트</h2>
+            
+            <button onclick="testNoFace()">😶 얼굴 미검출 시나리오</button>
+            <button onclick="testSecurityFail()">🚫 보안 검증 실패 시나리오</button>
+            <button onclick="testMemberNotFound()">❓ 회원 미발견 시나리오</button>
+            <button onclick="testNoTickets()">🎫 이용권 없음 시나리오</button>
+            
+            <div id="scenarioResult" class="result"></div>
+        </div>
+        
+        <!-- 테스트 이미지 섹션 -->
+        <div class="test-section">
+            <h2>🖼️ 4. 테스트 이미지 업로드</h2>
+            
+            <div class="test-image-section">
+                <h3>이미지 파일로 테스트</h3>
+                <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)" />
+                <img id="imagePreview" class="image-preview" style="display:none;" />
+                <button onclick="testWithUploadedImage()" disabled id="testImageBtn">업로드한 이미지로 테스트</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let stream = null;
+        let selectedMember = null;
+        let selectedTicket = null;
+        let uploadedImageBase64 = null;
+        
+        // API URL 업데이트 함수
+        function updateApiUrl() {
+            const mode = document.getElementById('apiMode').value;
+            const apiUrlInput = document.getElementById('apiUrl');
+            
+            if (mode === 'main') {
+                apiUrlInput.value = 'http://localhost:8080/api/v1/kiosk';
+                console.log('API 모드 변경: 정식 API');
+            } else {
+                apiUrlInput.value = 'http://localhost:8080/api/v1/kiosk-test';
+                console.log('API 모드 변경: 테스트 API');
+            }
+            
+            // 상태 초기화
+            document.getElementById('statusResult').innerHTML = '';
+            console.log('현재 API URL:', apiUrlInput.value);
+        }
+        
+        // API 상태 확인
+        function checkAPIStatus() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            console.log('API 상태 확인 요청:', apiUrl + '/status');
+            console.log('사용하는 API 키:', apiKey);
+            
+            showResult('statusResult', '상태 확인 중...', 'warning');
+            
+            fetch(apiUrl + '/status', {
+                method: 'GET',
+                headers: {
+                    'X-API-Key': apiKey
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API Status:', data);
+                if (data.success) {
+                    let statusHtml = `✅ API 상태: ${data.status}\n\n구성 요소 상태:\n`;
+                    for (const [component, status] of Object.entries(data.components)) {
+                        const emoji = status === 'healthy' ? '✅' : '❌';
+                        statusHtml += `${emoji} ${component}: ${status}\n`;
+                    }
+                    statusHtml += `\n⏰ 확인 시간: ${data.timestamp}`;
+                    showResult('statusResult', statusHtml, 'success');
+                } else {
+                    showResult('statusResult', '❌ API 상태 확인 실패\n' + JSON.stringify(data, null, 2), 'error');
+                }
+            })
+            .catch(error => {
+                showResult('statusResult', 
+                    `❌ API 서버에 연결할 수 없습니다\n\n` +
+                    `URL: ${apiUrl}\n` +
+                    `오류: ${error.message}\n\n` +
+                    `확인사항:\n` +
+                    `1. API 서버가 실행 중인지 확인하세요\n` +
+                    `2. URL이 올바른지 확인하세요\n` +
+                    `3. CORS 설정이 되어있는지 확인하세요`, 
+                    'error'
+                );
+            });
+        }
+        
+        // 카메라 시작
+        function startCamera() {
+            const video = document.getElementById('video');
+            
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                } 
+            })
+            .then(function(s) {
+                stream = s;
+                video.srcObject = stream;
+                document.getElementById('captureBtn').disabled = false;
+                showResult('authResult', '✅ 카메라가 시작되었습니다.', 'success');
+            })
+            .catch(function(err) {
+                showResult('authResult', '❌ 카메라 접근 실패: ' + err.message, 'error');
+            });
+        }
+        
+        // 카메라 중지
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                document.getElementById('video').srcObject = null;
+                document.getElementById('captureBtn').disabled = true;
+                showResult('authResult', '⏹️ 카메라가 중지되었습니다.', 'success');
+            }
+        }
+        
+        // 얼굴 촬영 및 인증
+        function captureAndAuth() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            // Base64로 변환
+            const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            
+            performFaceAuth(imageData);
+        }
+        
+        // 얼굴 인증 수행
+        function performFaceAuth(imageBase64) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            // API 호출
+            const requestData = {
+                image: imageBase64,
+                device_id: document.getElementById('deviceId').value,
+                location: document.getElementById('location').value,
+                check_liveness: true,
+                language: document.getElementById('language').value
+            };
+            
+            showResult('authResult', '🔄 인증 요청 중...', 'warning');
+            
+            fetch(apiUrl + '/face-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                
+                if (data.success) {
+                    showResult('authResult', 
+                        `✅ 인증 성공!\n\n` +
+                        JSON.stringify(data, null, 2), 
+                        'success'
+                    );
+                    
+                    // 회원 정보 표시
+                    if (data.data && data.data.member) {
+                        selectedMember = data.data.member;
+                        displayMemberInfo(data.data.member);
+                    }
+                    
+                    // 이용권이 있으면 표시
+                    if (data.data && data.data.tickets && data.data.tickets.length > 0) {
+                        displayTickets(data.data.tickets);
+                    } else if (data.error_code === 'E006') {
+                        document.getElementById('ticketList').innerHTML = 
+                            '<div class="warning" style="padding: 20px;">⚠️ 사용 가능한 이용권이 없습니다.</div>';
+                    }
+                } else {
+                    const errorEmoji = getErrorEmoji(data.error_code);
+                    showResult('authResult', 
+                        `${errorEmoji} 인증 실패\n\n` +
+                        JSON.stringify(data, null, 2), 
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                showResult('authResult', 
+                    `❌ API 호출 실패\n\n` +
+                    `오류: ${error.message}\n\n` +
+                    `API URL: ${apiUrl}/face-auth`, 
+                    'error'
+                );
+            });
+        }
+        
+        // 회원 정보 표시
+        function displayMemberInfo(member) {
+            const memberInfoDiv = document.getElementById('memberInfo');
+            const memberDetailsDiv = document.getElementById('memberDetails');
+            
+            memberDetailsDiv.innerHTML = `
+                <p><strong>회원번호:</strong> ${member.mem_sno}</p>
+                <p><strong>회원명:</strong> ${member.mem_nm}</p>
+                <p><strong>전화번호:</strong> ${member.mem_telno_mask}</p>
+            `;
+            
+            memberInfoDiv.style.display = 'block';
+        }
+        
+        // 이용권 목록 표시
+        function displayTickets(tickets) {
+            const ticketList = document.getElementById('ticketList');
+            ticketList.innerHTML = '<h3>🎫 이용 가능한 이용권:</h3>';
+            
+            tickets.forEach((ticket, index) => {
+                const ticketDiv = document.createElement('div');
+                ticketDiv.className = 'ticket-item';
+                
+                if (!ticket.is_available) {
+                    ticketDiv.className += ' disabled';
+                }
+                
+                let ticketIcon = ticket.ticket_type === 'count' ? '🔢' : '📅';
+                let statusIcon = ticket.is_available ? '✅' : '❌';
+                
+                ticketDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${ticketIcon} ${ticket.ticket_name}</strong><br>
+                            ${ticket.remaining_info} | 만료일: ${ticket.expire_date}<br>
+                            <small>ID: ${ticket.ticket_id}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            ${statusIcon} ${ticket.is_available ? '입장 가능' : '입장 불가'}
+                        </div>
+                    </div>
+                `;
+                
+                if (ticket.is_available) {
+                    ticketDiv.onclick = () => selectTicket(ticket, ticketDiv);
+                }
+                
+                ticketList.appendChild(ticketDiv);
+            });
+            
+            document.getElementById('checkinBtn').disabled = false;
+        }
+        
+        // 이용권 선택
+        function selectTicket(ticket, element) {
+            // 기존 선택 해제
+            document.querySelectorAll('.ticket-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 새로운 선택
+            element.classList.add('selected');
+            selectedTicket = ticket;
+        }
+        
+        // 체크인 처리
+        function processCheckin() {
+            if (!selectedMember || !selectedTicket) {
+                showResult('checkinResult', '⚠️ 회원 정보와 이용권을 선택해주세요.', 'error');
+                return;
+            }
+            
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            const requestData = {
+                mem_sno: selectedMember.mem_sno,
+                ticket_id: selectedTicket.ticket_id,
+                device_id: document.getElementById('deviceId').value,
+                location: document.getElementById('location').value,
+                language: document.getElementById('language').value
+            };
+            
+            showResult('checkinResult', '🔄 체크인 처리 중...', 'warning');
+            
+            fetch(apiUrl + '/checkin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Checkin Response:', data);
+                
+                if (data.success) {
+                    showResult('checkinResult', 
+                        `✅ 체크인 성공!\n\n` +
+                        JSON.stringify(data, null, 2), 
+                        'success'
+                    );
+                    
+                    // 초기화
+                    selectedTicket = null;
+                    document.querySelectorAll('.ticket-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                } else {
+                    showResult('checkinResult', 
+                        `❌ 체크인 실패\n\n` +
+                        JSON.stringify(data, null, 2), 
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                showResult('checkinResult', 
+                    `❌ API 호출 실패\n\n` +
+                    `오류: ${error.message}`, 
+                    'error'
+                );
+            });
+        }
+        
+        // 이미지 업로드 처리
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('imagePreview');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    
+                    // Base64 데이터 저장
+                    uploadedImageBase64 = e.target.result.split(',')[1];
+                    document.getElementById('testImageBtn').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // 업로드한 이미지로 테스트
+        function testWithUploadedImage() {
+            if (uploadedImageBase64) {
+                performFaceAuth(uploadedImageBase64);
+            }
+        }
+        
+        // 시나리오 테스트 함수들
+        function testNoFace() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const requestData = {
+                image: "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==", // 1x1 투명 이미지
+                device_id: "KIOSK_TEST",
+                language: document.getElementById('language').value
+            };
+            
+            callAPI('/face-auth', requestData, 'scenarioResult');
+        }
+        
+        function testSecurityFail() {
+            showResult('scenarioResult', 
+                '⚠️ 보안 검증 실패 시나리오는 실제 화면/사진 이미지가 필요합니다.\n' +
+                '컴퓨터 화면을 촬영한 이미지나 인쇄된 사진을 사용해보세요.', 
+                'warning'
+            );
+        }
+        
+        function testMemberNotFound() {
+            showResult('scenarioResult', 
+                '⚠️ 회원 미발견 시나리오는 등록되지 않은 얼굴 이미지가 필요합니다.\n' +
+                '시스템에 등록되지 않은 사람의 얼굴을 촬영해보세요.', 
+                'warning'
+            );
+        }
+        
+        function testNoTickets() {
+            showResult('scenarioResult', 
+                '⚠️ 이용권 없음 시나리오는 이용권이 없는 회원의 얼굴 이미지가 필요합니다.\n' +
+                '이용권이 만료되었거나 없는 회원으로 테스트해보세요.', 
+                'warning'
+            );
+        }
+        
+        // API 호출 헬퍼 함수
+        function callAPI(endpoint, data, resultId) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            fetch(apiUrl + endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const emoji = data.success ? '✅' : getErrorEmoji(data.error_code);
+                showResult(resultId, 
+                    `${emoji} 응답:\n\n` +
+                    JSON.stringify(data, null, 2), 
+                    data.success ? 'success' : 'error'
+                );
+            })
+            .catch(error => {
+                showResult(resultId, '❌ API 호출 실패: ' + error.message, 'error');
+            });
+        }
+        
+        // 에러 코드별 이모지
+        function getErrorEmoji(errorCode) {
+            const emojiMap = {
+                'E001': '📝', // 필수 파라미터 누락
+                'E002': '🖼️', // 잘못된 이미지
+                'E003': '😶', // 얼굴 미검출
+                'E004': '🚫', // 보안 검증 실패
+                'E005': '❓', // 회원 미발견
+                'E006': '🎫', // 이용권 없음
+                'E007': '❌', // 체크인 실패
+                'E999': '💥'  // 서버 오류
+            };
+            return emojiMap[errorCode] || '❌';
+        }
+        
+        // 결과 표시 함수
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'result ' + type;
+        }
+        
+        // 페이지 로드 시 API 상태 확인
+        window.onload = function() {
+            checkAPIStatus();
+        };
+    </script>
+</body>
+</html>

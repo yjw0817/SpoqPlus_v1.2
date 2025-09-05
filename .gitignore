@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+face_env/
+*.egg-info/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+config.env
+*.env.local
+*.env.development
+*.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Version Control
+.svn/
+
+# Face Recognition
+face_recognition/models/
+face_recognition/test_images/
+face_recognition/uploads/
+face_recognition/temp/
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+
+# Database
+*.sql
+*.db
+*.sqlite
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build
+dist/
+build/
+*.min.js
+*.min.css
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Config files with sensitive data
+application/config/database.php
+application/config/config.php
+
+# Session files
+application/sessions/*
+!application/sessions/.gitkeep
+
+# CodeIgniter
+application/cache/*
+!application/cache/.gitkeep
+application/logs/*
+!application/logs/.gitkeep
+system/
+writable/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep

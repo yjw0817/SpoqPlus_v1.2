@@ -1,0 +1,172 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Frontend & UI Guidelines
+
+This project uses Color Admin template with custom JavaScript for interactive features.
+
+## Template Structure
+
+### Core Template Files
+- **Public Assets**: [public/](mdc:public/) - Static files (CSS, JS, images)
+- **Plugins Directory**: [public/plugins/](mdc:public/plugins/) - Third-party libraries
+- **Upload Directory**: [public/uploads/](mdc:public/uploads/) - User uploaded files
+
+### Color Admin Template
+- Bootstrap-based admin template
+- Responsive design with sidebar navigation
+- Pre-built components and layouts
+- Located in `public/dist/` and `public/plugins/`
+
+## JavaScript Libraries Used
+
+### Core Libraries
+- **jQuery**: DOM manipulation and AJAX
+- **Bootstrap**: UI components and responsive grid
+- **SweetAlert2**: Modern alert/modal dialogs
+- **jsQR**: QR code scanning functionality
+
+### Custom JavaScript Patterns
+
+#### AJAX Requests
+```javascript
+jQuery.ajax({
+    url: '/api/endpoint',
+    type: 'POST',
+    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+    dataType: 'text',
+    data: 'param=' + encodeURIComponent(value),
+    success: function(result) {
+        // Handle success
+    },
+    error: function(xhr, status, error) {
+        // Handle error
+    }
+});
+```
+
+#### SweetAlert2 Usage
+```javascript
+// Success message
+Swal.fire({
+    icon: 'success',
+    title: '완료!',
+    text: '처리가 완료되었습니다.',
+    timer: 3000,
+    showConfirmButton: false
+});
+
+// Error message  
+Swal.fire({
+    icon: 'error',
+    title: '오류',
+    text: '오류가 발생했습니다.',
+    confirmButtonColor: '#007bff'
+});
+```
+
+## CSS Conventions
+
+### Button Styles
+- **Primary Action**: `.btn-checkin` - Blue buttons for main actions
+- **Secondary Action**: `.btn-qr-scan` - Green buttons for scan functions  
+- **Tertiary Action**: `.btn-face-scan` - Teal buttons for face recognition
+
+### Modal Styles
+- **QR Scanner**: `.qr-modal` - Full-screen camera overlay
+- **Ticket Selection**: `.ticket-modal` - Centered content modal
+- **Backdrop**: `rgba(0,0,0,0.8)` for modal backgrounds
+
+### Layout Patterns
+```css
+.main-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100vh;
+}
+
+.keypad-grid {
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+```
+
+## UI/UX Guidelines
+
+### Color Scheme
+- **Primary Blue**: `#007bff` - Main actions, selected states
+- **Success Green**: `#28a745` - QR scan, positive actions
+- **Warning Orange**: `#ffc107` - Caution messages
+- **Danger Red**: `#dc3545` - Error states
+- **Info Teal**: `#17a2b8` - Face recognition, info states
+- **Gray**: `#6c757d` - Cancel, disabled states
+
+### Typography
+- **Headers**: Bold weights (600+) for emphasis
+- **Body Text**: Regular weight (400) for readability
+- **Korean Text**: Ensure proper font support
+- **Time Display**: "HH시 MM분" format for Korean users
+
+### Interaction Patterns
+- **Hover Effects**: Subtle transform and shadow changes
+- **Loading States**: SweetAlert2 with spinner
+- **Form Validation**: Immediate feedback with SweetAlert2
+- **Auto-clear**: Input fields clear after modal actions
+
+## Camera & Media Access
+
+### QR Scanner Implementation
+```javascript
+navigator.mediaDevices.getUserMedia({ 
+    video: { 
+        facingMode: 'environment' // Prefer back camera
+    } 
+});
+```
+
+### Error Handling
+- Camera permission denied
+- No camera available  
+- QR code format validation
+- Network connectivity issues
+
+## Responsive Design
+
+### Breakpoints
+- Mobile: Focus on single-column layout
+- Tablet: Maintain grid but adjust spacing
+- Desktop: Full two-column layout with sidebar
+
+### Touch Interactions
+- Large touch targets (minimum 44px)
+- Hover states for non-touch devices
+- Swipe gestures for modals
+
+## Performance Considerations
+
+### JavaScript Optimization
+- Minimize DOM queries
+- Use event delegation
+- Clear intervals/timeouts properly
+- Cleanup camera streams
+
+### CSS Optimization  
+- Use CSS Grid/Flexbox for layouts
+- Minimize repaints with transform properties
+- Optimize images and assets
+
+## Accessibility
+
+### Keyboard Navigation
+- Tab order follows logical flow
+- Enter key triggers main actions
+- Escape key closes modals
+- Number keys work on keypad
+
+### Screen Readers
+- Proper ARIA labels
+- Descriptive button text
+- Status announcements for dynamic content

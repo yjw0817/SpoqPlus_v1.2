@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Markdown to HTML Converter - Fixed</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        h3 { color: #7f8c8d; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        pre {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #3498db;
+            margin: 0;
+            padding-left: 20px;
+            color: #666;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        /* 디버그용 스타일 */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+        .debug-info.show {
+            display: block;
+        }
+        @media print {
+            .controls, .debug-info { display: none !important; }
+            body { margin: 0; padding: 20px; }
+            .mermaid { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="loadPaymentDoc()">결제 문서 로드</button>
+        <button onclick="loadRefundDoc()">환불 문서 로드</button>
+        <button onclick="window.print()">🖨️ 인쇄</button>
+        <button onclick="toggleDebug()">🐛 디버그</button>
+    </div>
+    
+    <div id="content">
+        <h1>문서를 선택하세요</h1>
+        <p>상단의 버튼을 클릭하여 문서를 로드하세요.</p>
+    </div>
+
+    <div class="debug-info" id="debugInfo">
+        <strong>디버그 정보:</strong>
+        <div id="debugContent"></div>
+    </div>
+
+    <script>
+        // 디버그 로그 함수
+        function debugLog(message) {
+            const debugContent = document.getElementById('debugContent');
+            debugContent.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+            console.log(message);
+        }
+
+        // 디버그 토글
+        function toggleDebug() {
+            document.getElementById('debugInfo').classList.toggle('show');
+        }
+
+        // Mermaid 초기화 - startOnLoad를 false로 설정
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+        debugLog('Mermaid 초기화 완료');
+
+        // Marked 설정
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false
+        });
+
+        // 고유 ID 생성기
+        let mermaidIdCounter = 0;
+        function generateMermaidId() {
+            return `mermaid-diagram-${++mermaidIdCounter}`;
+        }
+
+        // Mermaid 코드 블록을 처리하는 렌더러
+        const renderer = new marked.Renderer();
+        const originalCodeRenderer = renderer.code.bind(renderer);
+        
+        renderer.code = function(code, language, escaped) {
+            if (language === 'mermaid') {
+                const id = generateMermaidId();
+                debugLog(`Mermaid 코드 블록 발견: ${id}`);
+                // pre 태그와 함께 mermaid 클래스를 가진 div 생성
+                return `<div class="mermaid" id="${id}">${code}</div>`;
+            }
+            return originalCodeRenderer(code, language, escaped);
+        };
+
+        marked.use({ renderer });
+
+        // Markdown 렌더링 및 Mermaid 처리
+        async function renderMarkdown(markdown) {
+            try {
+                debugLog('Markdown 렌더링 시작');
+                
+                // Marked로 HTML 변환
+                const html = marked.parse(markdown);
+                document.getElementById('content').innerHTML = html;
+                debugLog('HTML 변환 완료');
+                
+                // Mermaid 다이어그램 찾기
+                const mermaidElements = document.querySelectorAll('.mermaid');
+                debugLog(`Mermaid 요소 ${mermaidElements.length}개 발견`);
+                
+                if (mermaidElements.length > 0) {
+                    // 각 Mermaid 요소 처리
+                    for (let element of mermaidElements) {
+                        try {
+                            const graphDefinition = element.textContent;
+                            const id = element.id;
+                            debugLog(`처리 중: ${id}`);
+                            
+                            // Mermaid 렌더링
+                            const { svg } = await mermaid.render(id + '-svg', graphDefinition);
+                            element.innerHTML = svg;
+                            debugLog(`${id} 렌더링 성공`);
+                        } catch (error) {
+                            debugLog(`Mermaid 렌더링 오류: ${error.message}`);
+                            element.innerHTML = `<pre style="color: red;">Mermaid 오류: ${error.message}</pre>`;
+                        }
+                    }
+                }
+                
+                debugLog('모든 처리 완료');
+            } catch (error) {
+                debugLog(`전체 오류: ${error.message}`);
+                console.error('렌더링 오류:', error);
+            }
+        }
+
+        function loadPaymentDoc() {
+            mermaidIdCounter = 0; // ID 카운터 리셋
+            const paymentDoc = `# SpoqPlus 결제 시스템 상세 문서
+
+## 목차
+1. [시스템 개요](#시스템-개요)
+2. [결제 프로세스 플로우차트](#결제-프로세스-플로우차트)
+3. [주요 컴포넌트](#주요-컴포넌트)
+
+## 시스템 개요
+
+SpoqPlus 결제 시스템은 피트니스/스포츠 센터에 특화된 종합 관리 시스템으로 다양한 상품 유형을 지원합니다.
+
+### 주요 특징
+- 다양한 상품 유형 지원 (이용권, PT, 라커, 1일권)
+- 복수 결제 수단 (카드, 현금, 계좌이체, 미수)
+- 휴회 및 환불 관리
+- 멀티 지점 지원
+- 선물하기 기능
+
+## 결제 프로세스 플로우차트
+
+아래는 구매하기 버튼 클릭부터 결제 완료까지의 전체 프로세스입니다:
+
+\`\`\`mermaid
+flowchart TD
+    A[info_mem 페이지] --> B{구매하기 버튼 클릭}
+    B --> C[JavaScript: info_mem_buy_event]
+    C --> D[Redirect: /teventmain/event_buy2/mem_sno]
+    
+    D --> E[event_buy2 Controller]
+    E --> F[회원 정보 조회]
+    E --> G[이용중 상품 조회]
+    E --> H[구매 가능 상품 표시]
+    
+    H --> I{상품 선택}
+    I --> J[Redirect: /teventmain/event_buy_info]
+    
+    J --> K[event_buy_info Controller]
+    K --> L[결제 정보 입력 폼]
+    L --> M[결제 방법 선택]
+    L --> N[희망 시작일 선택]
+    L --> O[라커 선택-선택사항]
+    
+    M --> P{결제하기 버튼}
+    P --> Q[POST: /teventmain/event_buy_proc]
+    
+    Q --> R[event_buy_proc Controller]
+    R --> S[Pay_lib 초기화]
+    S --> T[buy_run 실행]
+    
+    T --> U[사전 검증]
+    U --> V{상품 유형 확인}
+    
+    V -->|PT| W[func_pt_yes]
+    V -->|이용권| X[func_pt_no]
+    V -->|라커포함| Y[func_pt_no_lockr]
+    V -->|라커미정| Z[func_pt_no_lockr_empty]
+    
+    W --> AA[후속 처리]
+    X --> AA
+    Y --> AA
+    Z --> AA
+    
+    AA --> AB[기존 상품 재배열]
+    AB --> AC[계좌입금 처리]
+    AC --> AD[미수금 처리]
+    AD --> AE[구매내역 저장]
+    AE --> AF[결제관리 저장]
+    AF --> AG[매출관리 저장]
+    
+    AG --> AH[완료 메시지]
+    AH --> AI[Redirect: info_mem 페이지]
+\`\`\`
+
+## 주요 컴포넌트
+
+### Controllers
+- **Teventmain.php**: 결제 처리 메인 컨트롤러
+  - \`event_buy2()\`: 상품 선택 페이지
+  - \`event_buy_info()\`: 결제 정보 입력 페이지
+  - \`event_buy_proc()\`: 결제 처리 실행
+
+### Libraries
+- **Pay_lib.php**: 결제 처리 핵심 라이브러리
+  - \`buy_run()\`: 구매 실행
+  - \`func_pt_yes()\`: PT 상품 처리
+  - \`func_pt_no()\`: 이용권 처리
+
+### Models
+- **PayModel.php**: 결제 데이터 관리
+- **EventModel.php**: 상품 데이터 관리
+- **MemModel.php**: 회원 데이터 관리
+
+### 주요 테이블
+- \`sales_mgmt_tbl\`: 매출 관리
+- \`paymt_mgmt_tbl\`: 결제 관리
+- \`buy_event_mgmt_tbl\`: 구매 상품 관리
+- \`recvb_hist_tbl\`: 미수금 이력`;
+
+            renderMarkdown(paymentDoc);
+        }
+
+        function loadRefundDoc() {
+            mermaidIdCounter = 0; // ID 카운터 리셋
+            const refundDoc = `# SpoqPlus 환불 시스템 상세 문서
+
+## 목차
+1. [시스템 개요](#시스템-개요)
+2. [환불 프로세스 플로우차트](#환불-프로세스-플로우차트)
+3. [주요 컴포넌트](#주요-컴포넌트)
+
+## 시스템 개요
+
+SpoqPlus 환불 시스템은 회원이 구매한 상품(이용권, PT, 라커 등)을 환불 처리하는 종합 시스템입니다.
+
+### 주요 특징
+- 일할 계산 환불 (사용 일수/횟수 기반)
+- 위약금 및 기타 비용 별도 처리
+- 카드/현금/계좌이체 환불 지원
+- VAN 직접 취소 연동
+
+## 환불 프로세스 플로우차트
+
+아래는 환불하기 버튼 클릭부터 환불 완료까지의 전체 프로세스입니다:
+
+\`\`\`mermaid
+flowchart TD
+    A[info_mem 페이지] --> B[판매 리스트의 서브메뉴]
+    B --> C{환불하기 버튼 클릭}
+    C --> D[JavaScript: change_event_refund]
+    D --> E[Redirect: /ttotalmain/refund_info/mem_sno/buy_sno]
+    
+    E --> F[refund_info Controller]
+    F --> G[Refund_lib 초기화]
+    G --> H[refund_info 메소드 실행]
+    H --> I[환불 가능 금액 계산]
+    
+    I --> J[환불 정보 페이지 표시]
+    J --> K[결제 내역 목록]
+    J --> L[환불 금액 정보]
+    J --> M[위약금/기타 비용 입력]
+    
+    K --> N{개별 환불 버튼 클릭}
+    N --> O[JavaScript: refund_cancel]
+    O --> P[AJAX: /teventmain/ajax_event_buy_van_direct_cancel_proc]
+    
+    P --> Q[VAN 직접 취소 처리]
+    Q --> R[van_direct_hist 테이블 기록]
+    R --> S[환불 금액 업데이트]
+    
+    M --> T{환불하기 버튼 클릭}
+    T --> U[POST: /teventmain/refund_proc]
+    
+    U --> V[refund_proc Controller]
+    V --> W[Refund_lib 초기화]
+    W --> X[refund_run 실행]
+\`\`\`
+
+## 주요 컴포넌트
+
+### Controllers
+- **Ttotalmain.php**: 환불 정보 표시
+  - \`refund_info()\`: 환불 정보 페이지
+  
+- **Teventmain.php**: 환불 처리 실행
+  - \`ajax_event_buy_van_direct_cancel_proc()\`: 개별 결제 취소
+  - \`refund_proc()\`: 전체 환불 처리
+
+### Libraries
+- **Refund_lib.php**: 환불 처리 핵심 라이브러리
+  - \`refund_info()\`: 환불 정보 조회
+  - \`refund_run()\`: 환불 실행
+  - \`func_refund_mgmt()\`: 환불 내역 저장
+
+### Models
+- **PayModel.php**: 환불 데이터 저장
+- **EventModel.php**: 상품 상태 업데이트
+
+### 주요 테이블
+- \`refund_mgmt_tbl\`: 환불 관리
+- \`paymt_mgmt_tbl\`: 결제 상태 업데이트
+- \`van_direct_hist\`: VAN 취소 이력`;
+
+            renderMarkdown(refundDoc);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        table { border-collapse: collapse; margin-bottom: 30px; }
+        th, td { border: 1px solid #000; padding: 5px; text-align: center; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        .table-title { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; }
+    </style>
+</head>
+<body><div class="table-title">로그 분석 (log_analysis)</div><table><tr>
+        <th>테이블(한글명)</th>
+        <th>테이블(영문명)</th>
+        <th>컬럼(한글명)</th>
+        <th>컬럼(영문명)</th>
+        <th>컬럼설명</th>
+        <th>타입</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>NULL</th>
+        <th>자동생성</th>
+        <th>Default</th>
+    </tr><tr><td>로그 분석</td><td>log_analysis</td><td>아이디</td><td>id</td><td>고유번호</td><td>INT(11)</td><td>YES</td><td></td><td>NO</td><td>AUTO_INCREMENT</td><td></td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>로그 발생 시간</td><td>log_date</td><td>로그 발생 시간</td><td>DATETIME</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>오류 레벨</td><td>error_level</td><td>오류 레벨 (CRITICAL, ERROR, WARNING, INFO)</td><td>VARCHAR(20)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>오류 메시지</td><td>error_message</td><td>오류 메시지</td><td>TEXT</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>파일 경로</td><td>file_path</td><td>오류 발생 파일 경로</td><td>VARCHAR(500)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>라인 번호</td><td>line_number</td><td>오류 발생 라인 번호</td><td>INT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>스택 트레이스</td><td>stack_trace</td><td>스택 트레이스</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>사용자 아이디</td><td>user_id</td><td>사용자 ID</td><td>VARCHAR(50)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>사용자 이름</td><td>user_name</td><td>사용자 이름</td><td>VARCHAR(100)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>회사 코드</td><td>company_cd</td><td>회사 코드</td><td>VARCHAR(20)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>지점 코드</td><td>branch_cd</td><td>지점 코드</td><td>VARCHAR(20)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>요청 URL</td><td>request_url</td><td>요청 URL</td><td>VARCHAR(500)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>요청 메서드</td><td>request_method</td><td>요청 메서드 (GET, POST 등)</td><td>VARCHAR(10)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>요청 파라미터</td><td>request_params</td><td>요청 파라미터</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>세션 데이터</td><td>session_data</td><td>세션 데이터</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>사용자 에이전트</td><td>user_agent</td><td>사용자 에이전트</td><td>VARCHAR(500)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>IP 주소</td><td>ip_address</td><td>IP 주소</td><td>VARCHAR(50)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>오류 해시</td><td>error_hash</td><td>오류 고유 해시 (중복 체크용)</td><td>VARCHAR(64)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>발생 횟수</td><td>occurrence_count</td><td>발생 횟수</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>1</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>최초 발생 시간</td><td>first_occurred</td><td>최초 발생 시간</td><td>DATETIME</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>최근 발생 시간</td><td>last_occurred</td><td>최근 발생 시간</td><td>DATETIME</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>해결 여부</td><td>is_resolved</td><td>해결 여부</td><td>BOOLEAN</td><td></td><td></td><td>NO</td><td></td><td>FALSE</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>해결한 사용자</td><td>resolved_by</td><td>해결한 사용자</td><td>VARCHAR(50)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>해결 시간</td><td>resolved_at</td><td>해결 시간</td><td>DATETIME</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>적용된 수정 사항</td><td>fix_applied</td><td>적용된 수정 사항</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>생성일시</td><td>created_at</td><td>생성일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP</td></tr><tr><td>로그 분석</td><td>log_analysis</td><td>수정일시</td><td>updated_at</td><td>수정일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</td></tr></table><div class="table-title">오류 수정 이력 (error_fix_history)</div><table><tr>
+        <th>테이블(한글명)</th>
+        <th>테이블(영문명)</th>
+        <th>컬럼(한글명)</th>
+        <th>컬럼(영문명)</th>
+        <th>컬럼설명</th>
+        <th>타입</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>NULL</th>
+        <th>자동생성</th>
+        <th>Default</th>
+    </tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>아이디</td><td>id</td><td>고유번호</td><td>INT(11)</td><td>YES</td><td></td><td>NO</td><td>AUTO_INCREMENT</td><td></td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>오류 아이디</td><td>error_id</td><td>관련 오류 ID</td><td>INT</td><td></td><td>YES</td><td>NO</td><td></td><td></td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>수정한 사용자</td><td>fixed_by</td><td>수정한 사용자</td><td>VARCHAR(50)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>수정 시간</td><td>fixed_at</td><td>수정 시간</td><td>DATETIME</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>파일 경로</td><td>file_path</td><td>수정한 파일 경로</td><td>VARCHAR(500)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>원본 코드</td><td>original_code</td><td>원본 코드</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>수정된 코드</td><td>fixed_code</td><td>수정된 코드</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>수정 설명</td><td>fix_description</td><td>수정 설명</td><td>TEXT</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>수정 유형</td><td>fix_type</td><td>수정 유형 (AI, TEMPLATE, MANUAL)</td><td>VARCHAR(50)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>오류 수정 이력</td><td>error_fix_history</td><td>생성일시</td><td>created_at</td><td>생성일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP</td></tr></table><div class="table-title">로그 통계 요약 (log_statistics_summary)</div><table><tr>
+        <th>테이블(한글명)</th>
+        <th>테이블(영문명)</th>
+        <th>컬럼(한글명)</th>
+        <th>컬럼(영문명)</th>
+        <th>컬럼설명</th>
+        <th>타입</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>NULL</th>
+        <th>자동생성</th>
+        <th>Default</th>
+    </tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>아이디</td><td>id</td><td>고유번호</td><td>INT(11)</td><td>YES</td><td></td><td>NO</td><td>AUTO_INCREMENT</td><td></td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>날짜</td><td>date</td><td>통계 날짜</td><td>DATE</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>오류 레벨</td><td>error_level</td><td>오류 레벨</td><td>VARCHAR(20)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>발생 횟수</td><td>count</td><td>발생 횟수</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>0</td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>고유 오류 수</td><td>unique_errors</td><td>고유 오류 수</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>0</td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>영향받은 사용자 수</td><td>affected_users</td><td>영향받은 사용자 수</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>0</td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>해결된 오류 수</td><td>resolved_count</td><td>해결된 오류 수</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>0</td></tr><tr><td>로그 통계 요약</td><td>log_statistics_summary</td><td>생성일시</td><td>created_at</td><td>생성일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP</td></tr></table><div class="table-title">로그 알림 설정 (log_alert_settings)</div><table><tr>
+        <th>테이블(한글명)</th>
+        <th>테이블(영문명)</th>
+        <th>컬럼(한글명)</th>
+        <th>컬럼(영문명)</th>
+        <th>컬럼설명</th>
+        <th>타입</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>NULL</th>
+        <th>자동생성</th>
+        <th>Default</th>
+    </tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>아이디</td><td>id</td><td>고유번호</td><td>INT(11)</td><td>YES</td><td></td><td>NO</td><td>AUTO_INCREMENT</td><td></td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>알림 이름</td><td>alert_name</td><td>알림 이름</td><td>VARCHAR(100)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>오류 레벨</td><td>error_level</td><td>모니터링할 오류 레벨</td><td>VARCHAR(20)</td><td></td><td></td><td>NO</td><td></td><td></td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>임계값</td><td>threshold_count</td><td>임계값 (이상 발생시 알림)</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>1</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>시간 윈도우</td><td>time_window</td><td>시간 윈도우 (분)</td><td>INT</td><td></td><td></td><td>NO</td><td></td><td>60</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>알림 이메일</td><td>alert_email</td><td>알림 이메일</td><td>VARCHAR(255)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>알림 SMS</td><td>alert_sms</td><td>알림 SMS 번호</td><td>VARCHAR(20)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>활성화 여부</td><td>is_active</td><td>활성화 여부</td><td>BOOLEAN</td><td></td><td></td><td>NO</td><td></td><td>TRUE</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>생성자</td><td>created_by</td><td>생성자</td><td>VARCHAR(50)</td><td></td><td></td><td>YES</td><td></td><td>NULL</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>생성일시</td><td>created_at</td><td>생성일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP</td></tr><tr><td>로그 알림 설정</td><td>log_alert_settings</td><td>수정일시</td><td>updated_at</td><td>수정일시</td><td>TIMESTAMP</td><td></td><td></td><td>YES</td><td></td><td>CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</td></tr></table></body></html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<auth>
+	<Main>
+		<className>Main</className>
+		<funcList>
+			<index>
+				<name>index</name>
+				<desc>메인화면</desc>
+				<button>
+					<name>조회 권한</name>
+					<id>list</id>
+				</button>
+				<button>
+					<name>쓰기 권한</name>
+					<id>write</id>
+				</button>
+			</index>
+		</funcList>
+	</Main>
+</auth>

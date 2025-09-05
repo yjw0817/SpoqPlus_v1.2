@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>닫기 버튼 스타일 옵션</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button-group {
+            margin-bottom: 30px;
+        }
+        h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        /* 옵션 1: 그라데이션 + 애니메이션 (현재 적용) */
+        .close-app-btn-1 {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(238, 90, 111, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        .close-app-btn-1:hover {
+            background: linear-gradient(45deg, #ff5252, #e04865);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
+        }
+        
+        /* 옵션 2: 아웃라인 스타일 */
+        .close-app-btn-2 {
+            background: transparent;
+            color: #dc3545;
+            border: 2px solid #dc3545;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        .close-app-btn-2:hover {
+            background: #dc3545;
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        /* 옵션 3: 네온 효과 */
+        .close-app-btn-3 {
+            background: #ff416c;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 65, 108, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .close-app-btn-3:hover {
+            box-shadow: 0 0 30px rgba(255, 65, 108, 0.8);
+            transform: scale(1.05);
+        }
+        
+        /* 옵션 4: 미니멀 플랫 */
+        .close-app-btn-4 {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        .close-app-btn-4:hover {
+            background: #c0392b;
+        }
+        .close-app-btn-4:active {
+            transform: scale(0.95);
+        }
+        
+        /* 옵션 5: 원형 버튼 */
+        .close-app-btn-5 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+        }
+        .close-app-btn-5:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        /* 옵션 6: 글래스모피즘 */
+        .close-app-btn-6 {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            color: #dc3545;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        .close-app-btn-6:hover {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border-color: transparent;
+        }
+        
+        /* 아이콘 애니메이션 */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse-icon {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>닫기 버튼 스타일 옵션</h1>
+        
+        <div class="button-group">
+            <h3>옵션 1: 그라데이션 + 애니메이션 (현재 적용)</h3>
+            <button class="close-app-btn-1">
+                <i class="fas fa-power-off pulse-icon"></i>
+                <span>종료</span>
+            </button>
+        </div>
+        
+        <div class="button-group">
+            <h3>옵션 2: 아웃라인 스타일</h3>
+            <button class="close-app-btn-2">
+                <i class="fas fa-times-circle"></i>
+                <span>닫기</span>
+            </button>
+        </div>
+        
+        <div class="button-group">
+            <h3>옵션 3: 네온 효과</h3>
+            <button class="close-app-btn-3">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>EXIT</span>
+            </button>
+        </div>
+        
+        <div class="button-group">
+            <h3>옵션 4: 미니멀 플랫</h3>
+            <button class="close-app-btn-4">
+                <i class="fas fa-door-open"></i>
+                <span>나가기</span>
+            </button>
+        </div>
+        
+        <div class="button-group">
+            <h3>옵션 5: 원형 버튼</h3>
+            <button class="close-app-btn-5">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="button-group">
+            <h3>옵션 6: 글래스모피즘</h3>
+            <button class="close-app-btn-6">
+                <i class="fas fa-power-off"></i>
+                <span>종료</span>
+            </button>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+            <h3>사용 방법</h3>
+            <p>원하는 스타일의 클래스명을 복사해서 사용하세요:</p>
+            <ul>
+                <li><code>close-app-btn-1</code>: 그라데이션 + 애니메이션</li>
+                <li><code>close-app-btn-2</code>: 아웃라인 스타일</li>
+                <li><code>close-app-btn-3</code>: 네온 효과</li>
+                <li><code>close-app-btn-4</code>: 미니멀 플랫</li>
+                <li><code>close-app-btn-5</code>: 원형 버튼</li>
+                <li><code>close-app-btn-6</code>: 글래스모피즘</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

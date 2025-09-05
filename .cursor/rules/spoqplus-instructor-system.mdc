@@ -1,0 +1,234 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Instructor System Development Guide
+
+## Instructor System Overview
+The instructor system in SpoqPlus provides mobile-first interfaces for fitness instructors to manage their classes, attendance, and view their schedules. The system uses separate routing and authentication for instructor access.
+
+## Key Instructor Files
+
+### Controllers
+- [app/Controllers/Tmemmain.php](mdc:app/Controllers/Tmemmain.php) - Main instructor mobile controller
+- [app/Controllers/Mobile.php](mdc:app/Controllers/Mobile.php) - Mobile API endpoints (shared)
+
+### Views Structure
+- [app/Views/tmobile_p/](mdc:app/Views/tmobile_p) - Instructor mobile views
+- [app/Views/inc_p/left_mtlogin.php](mdc:app/Views/inc_p/left_mtlogin.php) - Instructor navigation menu
+- [app/Views/tmobile_p/mtmain.php](mdc:app/Views/tmobile_p/mtmain.php) - Instructor dashboard
+
+### Models
+- [app/Models/EventModel.php](mdc:app/Models/EventModel.php) - Event/schedule management
+- [app/Models/AttdModel.php](mdc:app/Models/AttdModel.php) - Attendance tracking
+- [app/Models/AdminModel.php](mdc:app/Models/AdminModel.php) - General data operations
+
+## Instructor Menu Structure
+
+### Current Menu Items (from left_mtlogin.php)
+1. **강사 메인** - Dashboard overview
+2. **출근 관리** - Work attendance management
+3. **공지사항** - Announcements and notices
+4. **수당 집계** - Salary/allowance calculation
+5. **GX수업 현황** - GX class status and management
+
+### Proposed GX-Specific Menu Items
+1. **내 GX 스케줄** - View assigned GX schedules
+2. **예약 현황** - View class reservations
+3. **출석 체크** - Mark member attendance
+4. **수업 관리** - Manage class details
+
+## GX Instructor System Components
+
+### Schedule Management
+- View assigned GX classes
+- Check class capacity and reservations
+- Update class status (active/cancelled)
+
+### Reservation Management
+- View member reservations for their classes
+- See waiting list members
+- Manage reservation approvals
+
+### Attendance System
+- Check-in members for classes
+- Mark no-shows
+- View attendance history
+
+### Class Information
+- Update class descriptions
+- Upload/change class images
+- Set class-specific rules
+
+## Database Tables for Instructor Features
+
+### Instructor-Related Queries
+```sql
+-- Get instructor's assigned GX schedules
+SELECT s.*, i.item_name, r.room_name 
+FROM gx_schd_mgmt_tbl s
+JOIN gx_item_tbl i ON s.gx_item_id = i.gx_item_id
+JOIN gx_room_mgmt_tbl r ON s.room_id = r.room_id
+WHERE s.tchr_id = ?
+
+-- Get reservations for instructor's classes
+SELECT rsv.*, m.mem_name, s.schd_date, s.schd_time
+FROM gx_member_reservation_tbl rsv
+JOIN gx_schd_mgmt_tbl s ON rsv.schd_id = s.schd_id
+JOIN member_tbl m ON rsv.mem_id = m.mem_id
+WHERE s.tchr_id = ? AND rsv.rsv_status = '00'
+```
+
+## Controller Method Patterns for Instructors
+
+### Main Controller Methods
+```php
+// In Tmemmain.php
+public function gx_schedule() {
+    // Show instructor's GX schedule
+}
+
+public function gx_reservations() {
+    // Show reservations for instructor's classes
+}
+
+public function attendance_check() {
+    // Attendance management interface
+}
+
+public function ajax_get_my_schedule() {
+    // AJAX: Get instructor's schedule data
+}
+
+public function ajax_get_class_reservations() {
+    // AJAX: Get reservations for specific class
+}
+
+public function ajax_mark_attendance() {
+    // AJAX: Mark member attendance
+}
+```
+
+## View File Patterns
+
+### Mobile Instructor Views
+- **Header**: Include instructor session check
+- **Navigation**: Use left_mtlogin.php for consistent menu
+- **Responsive**: Mobile-first design with Bootstrap
+- **AJAX**: Use jQuery for dynamic content loading
+
+### Modal Patterns
+```html
+<!-- Class Details Modal -->
+<div class="modal fade" id="classDetailsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Class information and reservation list -->
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Check Modal -->
+<div class="modal fade" id="attendanceModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Member list with check-in buttons -->
+        </div>
+    </div>
+</div>
+```
+
+## JavaScript Function Naming for Instructors
+
+### Schedule Functions
+- `loadInstructorSchedule()` - Load instructor's schedule
+- `showClassDetails(schedId)` - Show class details modal
+- `updateClassStatus(schedId, status)` - Update class status
+
+### Reservation Functions
+- `showReservationList(schedId)` - Show reservation list
+- `approveReservation(rsvId)` - Approve waiting reservation
+- `cancelMemberReservation(rsvId)` - Cancel member reservation
+
+### Attendance Functions
+- `showAttendanceModal(schedId)` - Show attendance interface
+- `markAttendance(rsvId, status)` - Mark member attendance
+- `submitAttendanceData()` - Submit all attendance data
+
+## Authentication and Session
+
+### Instructor Session Variables
+- `tchr_id` - Instructor ID
+- `tchr_name` - Instructor name
+- `comp_id` - Company ID
+- `login_type` - Should be 'instructor' or similar
+
+### Session Validation
+```php
+// Check instructor session in controller
+if (!session()->get('tchr_id')) {
+    return redirect()->to('/login');
+}
+```
+
+## API Endpoints for Instructor System
+
+### Schedule Endpoints
+- `/tmobile/my_gx_schedule` - Get instructor's schedule
+- `/tmobile/class_details/{schedId}` - Get class details
+- `/tmobile/update_class_status` - Update class status
+
+### Reservation Endpoints
+- `/tmobile/class_reservations/{schedId}` - Get class reservations
+- `/tmobile/approve_reservation` - Approve waiting reservation
+- `/tmobile/reservation_stats` - Get reservation statistics
+
+### Attendance Endpoints
+- `/tmobile/attendance_list/{schedId}` - Get attendance list
+- `/tmobile/mark_attendance` - Mark attendance
+- `/tmobile/attendance_history` - Get attendance history
+
+## Mobile UI Considerations
+
+### Touch-Friendly Design
+- Large buttons for touch interaction
+- Swipe gestures for navigation
+- Pull-to-refresh for data updates
+
+### Performance Optimization
+- Lazy loading for large lists
+- Minimize AJAX calls
+- Cache frequently accessed data
+
+### Offline Capability
+- Store critical data locally
+- Queue actions when offline
+- Sync when connection restored
+
+## Error Handling for Instructors
+
+### Common Error Scenarios
+- Network connectivity issues
+- Session timeout
+- Class cancellation conflicts
+- Attendance submission failures
+
+### User-Friendly Messages
+- Clear error descriptions
+- Suggested actions
+- Retry mechanisms
+- Contact information for support
+
+## Development Best Practices
+
+1. **Mobile-First**: Design for mobile devices primarily
+2. **Progressive Enhancement**: Basic functionality without JavaScript
+3. **Consistent Navigation**: Use standard menu structure
+4. **Data Validation**: Validate all input data
+5. **Security**: Verify instructor permissions for all actions
+6. **Performance**: Optimize for mobile network speeds
+7. **Accessibility**: Support screen readers and keyboard navigation
+
+
+

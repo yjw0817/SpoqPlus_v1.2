@@ -1,0 +1,344 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "SPOQ Plus WAF Rules for Application Security",
+  "Resources": {
+    "SpoqPlusWebACL": {
+      "Type": "AWS::WAFv2::WebACL",
+      "Properties": {
+        "Name": "SpoqPlusWebACL",
+        "Scope": "REGIONAL",
+        "Description": "Web ACL for SPOQ Plus Application",
+        "DefaultAction": {
+          "Allow": {}
+        },
+        "Rules": [
+          {
+            "Name": "RateLimitRule",
+            "Priority": 1,
+            "Statement": {
+              "RateBasedStatement": {
+                "Limit": 2000,
+                "AggregateKeyType": "IP"
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "RateLimitRule"
+            }
+          },
+          {
+            "Name": "SQLInjectionRule",
+            "Priority": 2,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesSQLiRuleSet"
+              }
+            },
+            "OverrideAction": {
+              "None": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "SQLInjectionRule"
+            }
+          },
+          {
+            "Name": "XSSProtectionRule",
+            "Priority": 3,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesKnownBadInputsRuleSet"
+              }
+            },
+            "OverrideAction": {
+              "None": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "XSSProtectionRule"
+            }
+          },
+          {
+            "Name": "PHPProtectionRule",
+            "Priority": 4,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesPHPRuleSet"
+              }
+            },
+            "OverrideAction": {
+              "None": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "PHPProtectionRule"
+            }
+          },
+          {
+            "Name": "IPReputationRule",
+            "Priority": 5,
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesAmazonIpReputationList"
+              }
+            },
+            "OverrideAction": {
+              "None": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "IPReputationRule"
+            }
+          },
+          {
+            "Name": "GeoBlockingRule",
+            "Priority": 6,
+            "Statement": {
+              "GeoMatchStatement": {
+                "CountryCodes": ["CN", "RU", "KP"]
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "GeoBlockingRule"
+            }
+          },
+          {
+            "Name": "SizeRestrictionRule",
+            "Priority": 7,
+            "Statement": {
+              "SizeConstraintStatement": {
+                "FieldToMatch": {
+                  "Body": {}
+                },
+                "ComparisonOperator": "GT",
+                "Size": 10485760,
+                "TextTransformations": [
+                  {
+                    "Priority": 0,
+                    "Type": "NONE"
+                  }
+                ]
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "SizeRestrictionRule"
+            }
+          },
+          {
+            "Name": "CustomHeaderRule",
+            "Priority": 8,
+            "Statement": {
+              "AndStatement": {
+                "Statements": [
+                  {
+                    "ByteMatchStatement": {
+                      "SearchString": "/api/",
+                      "FieldToMatch": {
+                        "UriPath": {}
+                      },
+                      "TextTransformations": [
+                        {
+                          "Priority": 0,
+                          "Type": "LOWERCASE"
+                        }
+                      ],
+                      "PositionalConstraint": "STARTS_WITH"
+                    }
+                  },
+                  {
+                    "NotStatement": {
+                      "Statement": {
+                        "ByteMatchStatement": {
+                          "SearchString": "SpoqPlusAPI",
+                          "FieldToMatch": {
+                            "SingleHeader": {
+                              "Name": "x-api-key"
+                            }
+                          },
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ],
+                          "PositionalConstraint": "CONTAINS"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "CustomHeaderRule"
+            }
+          },
+          {
+            "Name": "LoginBruteForceProtection",
+            "Priority": 9,
+            "Statement": {
+              "RateBasedStatement": {
+                "Limit": 5,
+                "AggregateKeyType": "IP",
+                "ScopeDownStatement": {
+                  "ByteMatchStatement": {
+                    "SearchString": "/login",
+                    "FieldToMatch": {
+                      "UriPath": {}
+                    },
+                    "TextTransformations": [
+                      {
+                        "Priority": 0,
+                        "Type": "LOWERCASE"
+                      }
+                    ],
+                    "PositionalConstraint": "CONTAINS"
+                  }
+                }
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "LoginBruteForceProtection"
+            }
+          },
+          {
+            "Name": "FaceAPIProtection",
+            "Priority": 10,
+            "Statement": {
+              "RateBasedStatement": {
+                "Limit": 100,
+                "AggregateKeyType": "IP",
+                "ScopeDownStatement": {
+                  "ByteMatchStatement": {
+                    "SearchString": "/api/face",
+                    "FieldToMatch": {
+                      "UriPath": {}
+                    },
+                    "TextTransformations": [
+                      {
+                        "Priority": 0,
+                        "Type": "LOWERCASE"
+                      }
+                    ],
+                    "PositionalConstraint": "STARTS_WITH"
+                  }
+                }
+              }
+            },
+            "Action": {
+              "Block": {}
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": true,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "FaceAPIProtection"
+            }
+          }
+        ],
+        "VisibilityConfig": {
+          "SampledRequestsEnabled": true,
+          "CloudWatchMetricsEnabled": true,
+          "MetricName": "SpoqPlusWebACL"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "SpoqPlus"
+          },
+          {
+            "Key": "Environment",
+            "Value": "Production"
+          }
+        ]
+      }
+    },
+    "SpoqPlusIPSet": {
+      "Type": "AWS::WAFv2::IPSet",
+      "Properties": {
+        "Name": "SpoqPlusAllowedIPs",
+        "Scope": "REGIONAL",
+        "IPAddressVersion": "IPV4",
+        "Addresses": [
+          "10.0.0.0/8",
+          "172.16.0.0/12",
+          "192.168.0.0/16"
+        ],
+        "Description": "Allowed IP addresses for internal access",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "SpoqPlus"
+          }
+        ]
+      }
+    },
+    "SpoqPlusRegexPatternSet": {
+      "Type": "AWS::WAFv2::RegexPatternSet",
+      "Properties": {
+        "Name": "SpoqPlusSQLInjectionPatterns",
+        "Scope": "REGIONAL",
+        "Description": "Custom SQL injection patterns",
+        "RegularExpressionList": [
+          {
+            "RegexString": "(?i)(union.*select|select.*from|insert.*into|delete.*from|drop.*table|update.*set)"
+          },
+          {
+            "RegexString": "(?i)(exec(\\s|\\+)+(s|x)p\\w+|execute\\s+immediate|dbms_)"
+          },
+          {
+            "RegexString": "(?i)(\\\\x[0-9a-f]{2}|\\\\[0-9]{1,3})"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "SpoqPlus"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "WebACLArn": {
+      "Description": "ARN of the Web ACL",
+      "Value": {
+        "Ref": "SpoqPlusWebACL"
+      },
+      "Export": {
+        "Name": "SpoqPlusWebACLArn"
+      }
+    }
+  }
+}

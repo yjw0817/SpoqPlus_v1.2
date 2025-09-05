@@ -1,0 +1,432 @@
+{
+	"info": {
+		"_postman_id": "face-recognition-api",
+		"name": "Face Recognition API",
+		"description": "SPOQ Plus Face Recognition API Collection\n\n이 컬렉션은 Face Recognition API의 모든 엔드포인트를 포함합니다.\n\n## 사용 방법\n1. 환경 변수에서 `base_url`을 설정하세요 (기본값: http://localhost:5002)\n2. 이미지 파일을 Base64로 인코딩하여 사용하세요\n3. 각 요청의 Body 탭에서 필요한 값을 수정하세요",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/face/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"health"
+					]
+				},
+				"description": "서버 상태를 확인합니다."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/face/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"face",
+								"health"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"healthy\",\n    \"service\": \"InsightFace Recognition Service\",\n    \"version\": \"1.0.0\",\n    \"database\": \"connected\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Register Face",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"member_id\": \"MEM001\",\n    \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n    \"security_level\": 3,\n    \"notes\": \"Postman 테스트 등록\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/face/register",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"register"
+					]
+				},
+				"description": "회원의 얼굴을 등록합니다.\n\n### 파라미터\n- `member_id` (required): 회원 ID\n- `image` (required): Base64 인코딩된 이미지 (data URI 형식)\n- `security_level` (optional): 보안 레벨 (1-3, 기본값: 3)\n- `notes` (optional): 메모"
+			},
+			"response": [
+				{
+					"name": "Success",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"member_id\": \"MEM001\",\n    \"image\": \"data:image/jpeg;base64,...\",\n    \"security_level\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/face/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"face",
+								"register"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"얼굴이 성공적으로 등록되었습니다\",\n    \"face_id\": 123,\n    \"member_id\": \"MEM001\",\n    \"quality_score\": 0.95,\n    \"liveness_score\": 0.88,\n    \"glasses_detected\": false,\n    \"security_checks\": {\n        \"face_detected\": true,\n        \"quality_passed\": true,\n        \"liveness_passed\": true,\n        \"single_face\": true\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Recognize Face",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n    \"comp_cd\": \"C001\",\n    \"bcoff_cd\": \"B001\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/face/recognize",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"recognize"
+					]
+				},
+				"description": "등록된 얼굴과 매칭합니다.\n\n### 파라미터\n- `image` (required): Base64 인코딩된 이미지\n- `comp_cd` (optional): 회사 코드 (지점별 필터링)\n- `bcoff_cd` (optional): 지점 코드 (지점별 필터링)"
+			},
+			"response": [
+				{
+					"name": "Success - Matched",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"image\": \"data:image/jpeg;base64,...\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/face/recognize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"face",
+								"recognize"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"matched\": true,\n    \"member_id\": \"MEM001\",\n    \"similarity\": 0.92,\n    \"confidence\": 0.95,\n    \"quality_score\": 0.88,\n    \"liveness_score\": 0.91,\n    \"glasses_detected\": false,\n    \"match_category\": \"normal\",\n    \"security_checks\": {\n        \"quality_passed\": true,\n        \"liveness_passed\": true,\n        \"threshold_passed\": true\n    },\n    \"member_info\": {\n        \"mem_nm\": \"홍길동\",\n        \"mem_telno_mask\": \"010-****-5678\",\n        \"mem_gendr\": \"M\"\n    }\n}"
+				},
+				{
+					"name": "Success - Not Matched",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"image\": \"data:image/jpeg;base64,...\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/face/recognize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"face",
+								"recognize"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"matched\": false,\n    \"similarity\": 0.45,\n    \"message\": \"등록된 얼굴을 찾을 수 없습니다\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Detect for Registration",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/face/detect_for_registration",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"detect_for_registration"
+					]
+				},
+				"description": "얼굴 등록 전 품질 검사를 수행합니다."
+			},
+			"response": []
+		},
+		{
+			"name": "Recognize for Checkin",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n    \"comp_cd\": \"C001\",\n    \"bcoff_cd\": \"B001\",\n    \"security_level\": 3\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/face/recognize_for_checkin",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"recognize_for_checkin"
+					]
+				},
+				"description": "체크인 시 엄격한 보안 검사를 수행합니다.\n\n### 파라미터\n- `image` (required): Base64 인코딩된 이미지\n- `comp_cd` (required): 회사 코드\n- `bcoff_cd` (required): 지점 코드\n- `security_level` (optional): 보안 레벨 (1-3, 기본값: 3)"
+			},
+			"response": []
+		},
+		{
+			"name": "Blink Detection",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"frames\": [\n        \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n        \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n        \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/face/blink_detection",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"face",
+						"blink_detection"
+					]
+				},
+				"description": "라이브니스 검증을 위한 눈 깜빡임을 감지합니다.\n\n### 파라미터\n- `frames` (required): Base64 인코딩된 이미지 배열 (최소 3프레임)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// 이미지 파일을 Base64로 인코딩하는 예제",
+					"// 실제 사용 시에는 이미지 파일을 Base64로 변환하여 사용하세요",
+					"",
+					"// 예제: Node.js 환경에서",
+					"// const fs = require('fs');",
+					"// const imageBuffer = fs.readFileSync('path/to/image.jpg');",
+					"// const base64Image = imageBuffer.toString('base64');",
+					"// pm.environment.set('image_base64', `data:image/jpeg;base64,${base64Image}`);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// 공통 테스트 스크립트",
+					"pm.test(\"Status code is 200\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"pm.test(\"Response is JSON\", function () {",
+					"    pm.response.to.have.header(\"Content-Type\", \"application/json\");",
+					"});",
+					"",
+					"pm.test(\"Response has success field\", function () {",
+					"    const jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('success');",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5002",
+			"type": "string"
+		},
+		{
+			"key": "member_id",
+			"value": "MEM001",
+			"type": "string"
+		},
+		{
+			"key": "comp_cd",
+			"value": "C001",
+			"type": "string"
+		},
+		{
+			"key": "bcoff_cd",
+			"value": "B001",
+			"type": "string"
+		}
+	]
+}

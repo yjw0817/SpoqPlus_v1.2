@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Web Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .preview {
+            max-width: 300px;
+            margin: 10px 0;
+        }
+        .preview img {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 16px;
+        }
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .camera-container {
+            position: relative;
+            display: inline-block;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Face Recognition Web Client</h1>
+    
+    <div class="container">
+        <h2>서버 설정</h2>
+        <div class="form-group">
+            <label for="serverUrl">API Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:5002" />
+        </div>
+        <button onclick="checkHealth()">서버 상태 확인</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('register')">얼굴 등록</button>
+            <button class="tab" onclick="showTab('recognize')">얼굴 인식</button>
+            <button class="tab" onclick="showTab('checkin')">체크인</button>
+            <button class="tab" onclick="showTab('camera')">카메라 캡처</button>
+        </div>
+
+        <!-- 얼굴 등록 탭 -->
+        <div id="register" class="tab-content active">
+            <h3>얼굴 등록</h3>
+            <div class="form-group">
+                <label for="memberId">회원 ID:</label>
+                <input type="text" id="memberId" placeholder="MEM001" />
+            </div>
+            <div class="form-group">
+                <label for="registerImage">이미지 선택:</label>
+                <input type="file" id="registerImage" accept="image/*" onchange="previewImage(this, 'registerPreview')" />
+            </div>
+            <div class="form-group">
+                <label for="securityLevel">보안 레벨:</label>
+                <select id="securityLevel">
+                    <option value="1">레벨 1 (낮음)</option>
+                    <option value="2">레벨 2 (중간)</option>
+                    <option value="3" selected>레벨 3 (높음)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="notes">메모:</label>
+                <input type="text" id="notes" placeholder="등록 메모 (선택사항)" />
+            </div>
+            <div id="registerPreview" class="preview"></div>
+            <button onclick="checkQuality()">품질 검사</button>
+            <button onclick="registerFace()">얼굴 등록</button>
+            <div id="registerResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- 얼굴 인식 탭 -->
+        <div id="recognize" class="tab-content">
+            <h3>얼굴 인식</h3>
+            <div class="form-group">
+                <label for="recognizeImage">이미지 선택:</label>
+                <input type="file" id="recognizeImage" accept="image/*" onchange="previewImage(this, 'recognizePreview')" />
+            </div>
+            <div class="form-group">
+                <label for="compCd">회사 코드 (선택):</label>
+                <input type="text" id="compCd" placeholder="C001" />
+            </div>
+            <div class="form-group">
+                <label for="bcoffCd">지점 코드 (선택):</label>
+                <input type="text" id="bcoffCd" placeholder="B001" />
+            </div>
+            <div id="recognizePreview" class="preview"></div>
+            <button onclick="recognizeFace()">얼굴 인식</button>
+            <div id="recognizeResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- 체크인 탭 -->
+        <div id="checkin" class="tab-content">
+            <h3>체크인용 얼굴 인식</h3>
+            <div class="form-group">
+                <label for="checkinImage">이미지 선택:</label>
+                <input type="file" id="checkinImage" accept="image/*" onchange="previewImage(this, 'checkinPreview')" />
+            </div>
+            <div class="form-group">
+                <label for="checkinCompCd">회사 코드:</label>
+                <input type="text" id="checkinCompCd" placeholder="C001" value="C001" />
+            </div>
+            <div class="form-group">
+                <label for="checkinBcoffCd">지점 코드:</label>
+                <input type="text" id="checkinBcoffCd" placeholder="B001" value="B001" />
+            </div>
+            <div id="checkinPreview" class="preview"></div>
+            <button onclick="checkinFace()">체크인</button>
+            <div id="checkinResult" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- 카메라 캡처 탭 -->
+        <div id="camera" class="tab-content">
+            <h3>카메라 캡처</h3>
+            <div class="camera-container">
+                <video id="video" autoplay></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="form-group">
+                <button onclick="startCamera()">카메라 시작</button>
+                <button onclick="capturePhoto()">사진 촬영</button>
+                <button onclick="stopCamera()">카메라 정지</button>
+            </div>
+            <div id="capturedPreview" class="preview"></div>
+            <div class="form-group">
+                <label>촬영한 사진으로:</label>
+                <button onclick="useForRegister()">등록하기</button>
+                <button onclick="useForRecognize()">인식하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let currentStream = null;
+        let capturedImageData = null;
+
+        // API 클라이언트 클래스
+        class FaceRecognitionClient {
+            constructor(baseUrl) {
+                this.baseUrl = baseUrl;
+            }
+
+            async makeRequest(method, endpoint, data = null) {
+                const url = `${this.baseUrl}${endpoint}`;
+                const options = {
+                    method: method,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                };
+
+                if (method !== 'GET' && data) {
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(data);
+                }
+
+                try {
+                    const response = await fetch(url, options);
+                    const result = await response.json();
+                    return result;
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: 'Network error',
+                        message: error.message
+                    };
+                }
+            }
+
+            async healthCheck() {
+                return this.makeRequest('GET', '/api/face/health');
+            }
+
+            async registerFace(memberId, imageData, securityLevel = 3, notes = null) {
+                const data = {
+                    member_id: memberId,
+                    image: imageData,
+                    security_level: securityLevel
+                };
+                if (notes) data.notes = notes;
+                return this.makeRequest('POST', '/api/face/register', data);
+            }
+
+            async recognizeFace(imageData, compCd = null, bcoffCd = null) {
+                const data = { image: imageData };
+                if (compCd) data.comp_cd = compCd;
+                if (bcoffCd) data.bcoff_cd = bcoffCd;
+                return this.makeRequest('POST', '/api/face/recognize', data);
+            }
+
+            async recognizeForCheckin(imageData, compCd, bcoffCd, securityLevel = 3) {
+                const data = {
+                    image: imageData,
+                    comp_cd: compCd,
+                    bcoff_cd: bcoffCd,
+                    security_level: securityLevel
+                };
+                return this.makeRequest('POST', '/api/face/recognize_for_checkin', data);
+            }
+
+            async detectForRegistration(imageData) {
+                return this.makeRequest('POST', '/api/face/detect_for_registration', { image: imageData });
+            }
+        }
+
+        // 클라이언트 초기화
+        function getClient() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            return new FaceRecognitionClient(serverUrl);
+        }
+
+        // 탭 전환
+        function showTab(tabName) {
+            // 모든 탭과 컨텐츠 숨기기
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 선택한 탭 표시
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // 이미지 미리보기
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 이미지를 Base64로 변환
+        async function imageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 서버 상태 확인
+        async function checkHealth() {
+            const client = getClient();
+            const result = await client.healthCheck();
+            
+            const resultDiv = document.getElementById('healthResult');
+            if (result.status === 'healthy') {
+                resultDiv.innerHTML = `<div class="result success">
+                    <strong>✅ 서버 정상 작동 중</strong><br>
+                    서비스: ${result.service}<br>
+                    버전: ${result.version}<br>
+                    데이터베이스: ${result.database}
+                </div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="result error">
+                    <strong>❌ 서버 연결 실패</strong><br>
+                    ${result.error || '서버에 연결할 수 없습니다.'}
+                </div>`;
+            }
+        }
+
+        // 품질 검사
+        async function checkQuality() {
+            const fileInput = document.getElementById('registerImage');
+            if (!fileInput.files[0]) {
+                alert('이미지를 선택해주세요.');
+                return;
+            }
+
+            const imageData = await imageToBase64(fileInput.files[0]);
+            const client = getClient();
+            const result = await client.detectForRegistration(imageData);
+
+            const resultDiv = document.getElementById('registerResult');
+            resultDiv.style.display = 'block';
+
+            if (result.success && result.recommendations.suitable_for_registration) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <strong>✅ 품질 검사 통과</strong><br>
+                    품질 점수: ${(result.quality_score * 100).toFixed(0)}%<br>
+                    생체 점수: ${(result.liveness_score * 100).toFixed(0)}%<br>
+                    얼굴 크기: ${(result.face_size_ratio * 100).toFixed(0)}%<br>
+                    안경 감지: ${result.glasses_detected ? '예' : '아니오'}
+                `;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ 품질 검사 실패</strong><br>
+                    ${result.recommendations?.messages?.join('<br>') || result.error}
+                `;
+            }
+        }
+
+        // 얼굴 등록
+        async function registerFace() {
+            const memberId = document.getElementById('memberId').value;
+            const fileInput = document.getElementById('registerImage');
+            const securityLevel = parseInt(document.getElementById('securityLevel').value);
+            const notes = document.getElementById('notes').value;
+
+            if (!memberId) {
+                alert('회원 ID를 입력해주세요.');
+                return;
+            }
+
+            if (!fileInput.files[0]) {
+                alert('이미지를 선택해주세요.');
+                return;
+            }
+
+            const imageData = await imageToBase64(fileInput.files[0]);
+            const client = getClient();
+            const result = await client.registerFace(memberId, imageData, securityLevel, notes);
+
+            const resultDiv = document.getElementById('registerResult');
+            resultDiv.style.display = 'block';
+
+            if (result.success) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <strong>✅ 얼굴 등록 성공</strong><br>
+                    Face ID: ${result.face_id}<br>
+                    회원 ID: ${result.member_id}<br>
+                    품질 점수: ${(result.quality_score * 100).toFixed(0)}%<br>
+                    생체 점수: ${(result.liveness_score * 100).toFixed(0)}%<br>
+                    안경 감지: ${result.glasses_detected ? '예' : '아니오'}
+                `;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ 얼굴 등록 실패</strong><br>
+                    ${result.error}<br>
+                    ${result.details || ''}
+                `;
+            }
+        }
+
+        // 얼굴 인식
+        async function recognizeFace() {
+            const fileInput = document.getElementById('recognizeImage');
+            const compCd = document.getElementById('compCd').value;
+            const bcoffCd = document.getElementById('bcoffCd').value;
+
+            if (!fileInput.files[0]) {
+                alert('이미지를 선택해주세요.');
+                return;
+            }
+
+            const imageData = await imageToBase64(fileInput.files[0]);
+            const client = getClient();
+            const result = await client.recognizeFace(imageData, compCd, bcoffCd);
+
+            const resultDiv = document.getElementById('recognizeResult');
+            resultDiv.style.display = 'block';
+
+            if (result.success && result.matched) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <strong>✅ 얼굴 인식 성공</strong><br>
+                    회원 ID: ${result.member_id}<br>
+                    유사도: ${(result.similarity * 100).toFixed(1)}%<br>
+                    신뢰도: ${(result.confidence * 100).toFixed(1)}%<br>
+                    ${result.member_info ? `
+                        회원명: ${result.member_info.mem_nm}<br>
+                        연락처: ${result.member_info.mem_telno_mask}
+                    ` : ''}
+                `;
+            } else if (result.success && !result.matched) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ 등록된 얼굴을 찾을 수 없습니다</strong><br>
+                    최대 유사도: ${(result.similarity * 100).toFixed(1)}%
+                `;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ 얼굴 인식 실패</strong><br>
+                    ${result.error}
+                `;
+            }
+        }
+
+        // 체크인
+        async function checkinFace() {
+            const fileInput = document.getElementById('checkinImage');
+            const compCd = document.getElementById('checkinCompCd').value;
+            const bcoffCd = document.getElementById('checkinBcoffCd').value;
+
+            if (!fileInput.files[0]) {
+                alert('이미지를 선택해주세요.');
+                return;
+            }
+
+            if (!compCd || !bcoffCd) {
+                alert('회사 코드와 지점 코드를 입력해주세요.');
+                return;
+            }
+
+            const imageData = await imageToBase64(fileInput.files[0]);
+            const client = getClient();
+            const result = await client.recognizeForCheckin(imageData, compCd, bcoffCd);
+
+            const resultDiv = document.getElementById('checkinResult');
+            resultDiv.style.display = 'block';
+
+            if (result.success && result.checkin_allowed) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <strong>✅ 체크인 성공</strong><br>
+                    회원 ID: ${result.member_id}<br>
+                    ${result.member_info ? `회원명: ${result.member_info.mem_nm}<br>` : ''}
+                    유사도: ${(result.similarity * 100).toFixed(1)}%<br>
+                    보안 레벨: ${result.security_level}<br>
+                    <hr>
+                    보안 검사 결과:<br>
+                    ${Object.entries(result.security_checks)
+                        .map(([key, value]) => `${key}: ${value ? '✅' : '❌'}`)
+                        .join('<br>')}
+                `;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <strong>❌ 체크인 실패</strong><br>
+                    ${result.error || '보안 검증에 실패했습니다.'}<br>
+                    ${result.security_checks ? `
+                        <hr>
+                        보안 검사 결과:<br>
+                        ${Object.entries(result.security_checks)
+                            .map(([key, value]) => `${key}: ${value ? '✅' : '❌'}`)
+                            .join('<br>')}
+                    ` : ''}
+                `;
+            }
+        }
+
+        // 카메라 관련 함수
+        async function startCamera() {
+            try {
+                const video = document.getElementById('video');
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = currentStream;
+            } catch (error) {
+                alert('카메라 접근 권한이 필요합니다.');
+                console.error(error);
+            }
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+                document.getElementById('video').srcObject = null;
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const preview = document.getElementById('capturedPreview');
+
+            if (!currentStream) {
+                alert('먼저 카메라를 시작해주세요.');
+                return;
+            }
+
+            // 캔버스에 비디오 프레임 그리기
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Base64로 변환
+            capturedImageData = canvas.toDataURL('image/jpeg');
+            
+            // 미리보기 표시
+            preview.innerHTML = `<img src="${capturedImageData}" alt="Captured">`;
+        }
+
+        function useForRegister() {
+            if (!capturedImageData) {
+                alert('먼저 사진을 촬영해주세요.');
+                return;
+            }
+            
+            // 등록 탭으로 이동
+            showTab('register');
+            
+            // 캡처한 이미지 표시
+            document.getElementById('registerPreview').innerHTML = 
+                `<img src="${capturedImageData}" alt="Captured">`;
+        }
+
+        function useForRecognize() {
+            if (!capturedImageData) {
+                alert('먼저 사진을 촬영해주세요.');
+                return;
+            }
+            
+            // 인식 탭으로 이동
+            showTab('recognize');
+            
+            // 캡처한 이미지 표시
+            document.getElementById('recognizePreview').innerHTML = 
+                `<img src="${capturedImageData}" alt="Captured">`;
+        }
+
+        // 페이지 로드 시 서버 상태 확인
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html>

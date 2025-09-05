@@ -1,0 +1,205 @@
+version: '3.8'
+
+services:
+  # Nginx 웹 서버
+  nginx:
+    image: nginx:alpine
+    container_name: spoqplus-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - web-static:/var/www/html/public
+    depends_on:
+      - web
+      - face-api
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+
+  # PHP-FPM 웹 애플리케이션
+  web:
+    build:
+      context: ../..
+      dockerfile: cloud-infrastructure/docker/Dockerfile.web
+    container_name: spoqplus-web
+    environment:
+      - APP_ENV=production
+      - DB_HOST=mysql
+      - DB_USER=spoqplus
+      - DB_PASS=${DB_PASSWORD:-changeme}
+      - DB_NAME=spoqplus
+      - FACE_API_URL=http://face-api:5001
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ../../app:/var/www/html/app
+      - ../../public:/var/www/html/public
+      - web-uploads:/var/www/html/public/uploads
+      - web-logs:/var/www/html/writable/logs
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+
+  # Face Recognition Service
+  face-api:
+    build:
+      context: ../..
+      dockerfile: cloud-infrastructure/docker/Dockerfile.face
+    container_name: spoqplus-face-api
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - DB_HOST=mysql
+      - DB_USER=spoqplus
+      - DB_PASS=${DB_PASSWORD:-changeme}
+      - DB_NAME=spoqplus
+      - SIMILARITY_THRESHOLD=0.85
+      - GLASSES_THRESHOLD=0.25
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - face-logs:/app/logs
+    depends_on:
+      - mysql
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0
+    container_name: spoqplus-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=spoqplus
+      - MYSQL_USER=spoqplus
+      - MYSQL_PASSWORD=${DB_PASSWORD:-changeme}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d:ro
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis 캐시 서버
+  redis:
+    image: redis:7-alpine
+    container_name: spoqplus-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # phpMyAdmin (개발/관리용)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: spoqplus-phpmyadmin
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - UPLOAD_LIMIT=100M
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+    profiles:
+      - debug
+
+  # Cron 작업 스케줄러
+  cron:
+    build:
+      context: ../..
+      dockerfile: cloud-infrastructure/docker/Dockerfile.cron
+    container_name: spoqplus-cron
+    environment:
+      - APP_ENV=production
+      - DB_HOST=mysql
+      - DB_USER=spoqplus
+      - DB_PASS=${DB_PASSWORD:-changeme}
+      - DB_NAME=spoqplus
+    volumes:
+      - ../../app:/var/www/html/app
+      - cron-logs:/var/log/cron
+    depends_on:
+      - mysql
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+
+  # 백업 서비스
+  backup:
+    image: databack/mysql-backup
+    container_name: spoqplus-backup
+    environment:
+      - DB_SERVER=mysql
+      - DB_USER=root
+      - DB_PASS=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - DB_NAMES=spoqplus
+      - DB_DUMP_FREQ=1440  # 24시간마다
+      - DB_DUMP_BEGIN=0300  # KST 12:00
+      - COMPRESSION=gzip
+      - NICE=true
+      - TZ=Asia/Seoul
+    volumes:
+      - backup-data:/db
+    depends_on:
+      - mysql
+    networks:
+      - spoqplus-network
+    restart: unless-stopped
+
+networks:
+  spoqplus-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+  web-static:
+    driver: local
+  web-uploads:
+    driver: local
+  web-logs:
+    driver: local
+  face-logs:
+    driver: local
+  cron-logs:
+    driver: local
+  backup-data:
+    driver: local

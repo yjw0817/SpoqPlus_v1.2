@@ -1,0 +1,105 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Color Admin Checkin System
+
+This is a CodeIgniter 4 based attendance/checkin system with multiple authentication methods.
+
+## Project Structure
+
+### Core Checkin Files
+- **Main Controller**: [app/Controllers/Teventmem.php](mdc:app/Controllers/Teventmem.php) - Contains the `checkin()` method
+- **Routes Configuration**: [app/Config/Routes.php](mdc:app/Config/Routes.php) - Defines `/checkin` routes (GET/POST)
+- **Main View**: [app/Views/tchr/teventmem/checkin.php](mdc:app/Views/tchr/teventmem/checkin.php) - Complete checkin interface
+- **API Controller**: [app/Controllers/Api.php](mdc:app/Controllers/Api.php) - Backend APIs for ticket management
+- **Attendance Model**: [app/Models/AttdModel.php](mdc:app/Models/AttdModel.php) - Database operations
+- **Attendance Library**: [app/Libraries/Attd_lib.php](mdc:app/Libraries/Attd_lib.php) - Business logic for usage limits
+
+### API Endpoints
+- `/api/get_member_tickets` - Get tickets by member number
+- `/api/get_member_tickets_by_telno` - Get tickets by phone number  
+- `/api/checkin_with_ticket` - Process checkin with selected ticket
+
+## Checkin Features
+
+### Input Methods
+1. **Manual Entry**: Member number (max 11 digits) or phone number
+2. **QR Code Scan**: Uses jsQR library with camera access
+3. **Face Recognition**: UI placeholder (development pending)
+
+### Phone Number Recognition
+- Auto-detects phone numbers starting with `010` (11 digits) or `01` (10-11 digits)
+- Uses `isPhoneNumber()` function for validation
+- Automatically routes to appropriate API endpoint
+
+### Ticket Selection System
+- Modal interface for multiple tickets
+- Shows detailed ticket information (GX classes, usage limits)
+- Color-coded status indicators
+- Prevents selection of inactive/exceeded tickets
+
+### Usage Limit Checking
+- **Daily limits**: `USE_PER_DAY` validation
+- **Weekly limits**: By day count (`USE_PER_WEEK_UNIT = '10'`) or usage count (`USE_PER_WEEK_UNIT = '20'`)
+- Real-time status display with Korean time format
+- Detailed error messages for limit violations
+
+## Technical Stack
+
+### Frontend
+- **UI Framework**: Color Admin template
+- **JavaScript Libraries**: 
+  - jsQR for QR code scanning
+  - SweetAlert2 for notifications
+  - MediaDevices API for camera access
+- **Styling**: Custom CSS with gradient backgrounds and hover effects
+
+### Backend  
+- **Framework**: CodeIgniter 4
+- **Database**: MySQL with views (`cur_available_membership`, `cur_admittable_gx_class`)
+- **Session Management**: PHP sessions with login validation
+- **Error Handling**: JSON responses with comprehensive error messages
+
+## Key Functions
+
+### JavaScript Functions
+- `processCheckin()` - Main entry point for checkin
+- `getMemberTickets(memSno)` - Fetch tickets by member number
+- `getMemberTicketsByTelno(telno)` - Fetch tickets by phone number
+- `showTicketSelectionModal(tickets)` - Display ticket selection UI
+- `confirmTicketSelection()` - Process selected ticket
+- `startQRScanner()` - Initialize QR code scanning
+
+### PHP Methods
+- `Teventmem::checkin()` - Main controller method
+- `Api::get_member_tickets()` - Member ticket API
+- `Api::get_member_tickets_by_telno()` - Phone number ticket API
+- `Api::checkin_with_ticket()` - Process checkin
+- `AttdModel::cur_available_membership_by_telno()` - Phone number lookup
+- `Attd_lib::checkUsageLimits()` - Validate usage restrictions
+
+## Development Notes
+
+### URL Structure
+- Production: `http://localhost:8080/checkin`
+- Test Server: `http://183.99.33.126:8088/checkin`
+- Requires URL rewriting enabled (`$indexPage = ''`)
+
+### QR Code Format
+- Pattern: `comp_cd|bcoff_cd|mem_sno|timestamp`
+- Validation: Timestamp must be within valid range
+- Automatic member lookup after successful scan
+
+### UI/UX Guidelines
+- Consistent button sizing using `btn-qr-scan` class
+- Auto-clear input fields after modal actions
+- Korean text for user messages and time display
+- Responsive design with mobile considerations
+
+### Database Tables
+- Primary: Member tables with `MEM_SNO`, `MEM_TELNO` fields
+- Views: `cur_available_membership`, `cur_admittable_gx_class`
+- GX Classes: Special handling for `GX_SCHD_MGMT_SNO` records
+

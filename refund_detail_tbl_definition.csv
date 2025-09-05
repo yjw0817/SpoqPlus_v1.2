@@ -1,0 +1,20 @@
+테이블(한글명),테이블(영문명),컬럼(한글명),컬럼(영문명),컬럼설명,타입,PK,FK,NULL,자동여부,Default
+환불상세내역,refund_detail_tbl,환불상세일련번호,REFUND_DETAIL_SNO,환불상세내역의 고유번호,varchar(20),PK,,NO,,
+환불상세내역,refund_detail_tbl,환불관리번호,REFUND_MGMT_SNO,환불관리테이블의 환불번호,varchar(20),,FK,NO,,
+환불상세내역,refund_detail_tbl,구매종목일련번호,BUY_EVENT_SNO,구매종목관리의 구매번호,varchar(20),,FK,NO,,
+환불상세내역,refund_detail_tbl,결제관리일련번호,PAYMT_MGMT_SNO,원결제의 결제관리번호,varchar(20),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,환불방법,REFUND_MTHD,01:카드취소 02:현금 03:계좌이체,varchar(2),,FK,NO,,
+환불상세내역,refund_detail_tbl,환불금액,REFUND_AMT,실제 환불된 금액,int(14),,FK,NO,,
+환불상세내역,refund_detail_tbl,환불일자,REFUND_DATE,환불처리일자(YYYY-MM-DD),varchar(10),,FK,NO,,
+환불상세내역,refund_detail_tbl,환불유형,REFUND_TYPE,01:이용료 02:위약금 03:기타,varchar(2),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,결제VAN일련번호,PAYMT_VAN_SNO,VAN거래이력의 일련번호,varchar(20),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,환불은행코드,REFUND_BANK_CD,계좌이체환불시 은행코드,varchar(3),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,환불계좌번호,REFUND_ACCT_NO,계좌이체환불시 계좌번호,varchar(50),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,환불예금주명,REFUND_ACCT_NM,계좌이체환불시 예금주명,varchar(50),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,환불상태,REFUND_STAT,00:정상 01:취소,varchar(2),,FK,YES,,00
+환불상세내역,refund_detail_tbl,회사코드,COMP_CD,회사코드,varchar(20),,FK,NO,,
+환불상세내역,refund_detail_tbl,지점코드,BCOFF_CD,지점코드,varchar(20),,FK,NO,,
+환불상세내역,refund_detail_tbl,등록아이디,CRE_ID,최초등록자ID,varchar(30),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,등록일시,CRE_DATETM,최초등록일시,timestamp,,FK,NO,자동,current_timestamp()
+환불상세내역,refund_detail_tbl,수정아이디,MOD_ID,최종수정자ID,varchar(30),,FK,YES,,NULL
+환불상세내역,refund_detail_tbl,수정일시,MOD_DATETM,최종수정일시,timestamp,,FK,NO,자동,current_timestamp()

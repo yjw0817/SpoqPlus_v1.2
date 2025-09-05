@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpoqPlus 플로우차트 뷰어</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background-color: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .description {
+            margin: 10px 0;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SpoqPlus 시스템 플로우차트</h1>
+        
+        <div class="section">
+            <h2>1. 결제 프로세스 플로우</h2>
+            <p class="description">
+                회원 정보 페이지에서 구매하기 버튼을 클릭했을 때부터 결제 완료까지의 전체 흐름입니다.
+            </p>
+            <div class="mermaid">
+flowchart TD
+    A[info_mem 페이지] --> B{구매하기 버튼 클릭}
+    B --> C[JavaScript: info_mem_buy_event]
+    C --> D[Redirect: /teventmain/event_buy2/mem_sno]
+    
+    D --> E[event_buy2 Controller]
+    E --> F[회원 정보 조회]
+    E --> G[이용중 상품 조회]
+    E --> H[구매 가능 상품 표시]
+    
+    H --> I{상품 선택}
+    I --> J[Redirect: /teventmain/event_buy_info]
+    
+    J --> K[event_buy_info Controller]
+    K --> L[결제 정보 입력 폼]
+    L --> M[결제 방법 선택]
+    L --> N[희망 시작일 선택]
+    L --> O[라커 선택<선택사항>]
+    
+    M --> P{결제하기 버튼}
+    P --> Q[POST: /teventmain/event_buy_proc]
+    
+    Q --> R[event_buy_proc Controller]
+    R --> S[Pay_lib 초기화]
+    S --> T[buy_run 실행]
+    
+    T --> U[사전 검증]
+    U --> V{상품 유형 확인}
+    
+    V -->|PT| W[func_pt_yes]
+    V -->|이용권| X[func_pt_no]
+    V -->|라커포함| Y[func_pt_no_lockr]
+    V -->|라커미정| Z[func_pt_no_lockr_empty]
+    
+    W --> AA[후속 처리]
+    X --> AA
+    Y --> AA
+    Z --> AA
+    
+    AA --> AB[기존 상품 재배열]
+    AB --> AC[계좌입금 처리]
+    AC --> AD[미수금 처리]
+    AD --> AE[구매내역 저장]
+    AE --> AF[결제관리 저장]
+    AF --> AG[매출관리 저장]
+    
+    AG --> AH[완료 메시지]
+    AH --> AI[Redirect: info_mem 페이지]
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. 환불 프로세스 플로우</h2>
+            <p class="description">
+                판매 리스트의 서브메뉴에서 환불하기를 클릭했을 때부터 환불 완료까지의 전체 흐름입니다.
+            </p>
+            <div class="mermaid">
+flowchart TD
+    A[info_mem 페이지] --> B[판매 리스트의 서브메뉴]
+    B --> C{환불하기 버튼 클릭}
+    C --> D[JavaScript: change_event_refund]
+    D --> E[Redirect: /ttotalmain/refund_info/mem_sno/buy_sno]
+    
+    E --> F[refund_info Controller]
+    F --> G[Refund_lib 초기화]
+    G --> H[refund_info 메소드 실행]
+    H --> I[환불 가능 금액 계산]
+    
+    I --> J[환불 정보 페이지 표시]
+    J --> K[결제 내역 목록]
+    J --> L[환불 금액 정보]
+    J --> M[위약금/기타 비용 입력]
+    
+    K --> N{개별 환불 버튼 클릭}
+    N --> O[JavaScript: refund_cancel]
+    O --> P[AJAX: /teventmain/ajax_event_buy_van_direct_cancel_proc]
+    
+    P --> Q[VAN 직접 취소 처리]
+    Q --> R[van_direct_hist 테이블 기록]
+    R --> S[환불 금액 업데이트]
+    
+    M --> T{환불하기 버튼 클릭}
+    T --> U[POST: /teventmain/refund_proc]
+    
+    U --> V[refund_proc Controller]
+    V --> W[Refund_lib 초기화]
+    W --> X[refund_run 실행]
+    
+    X --> Y[구매 정보 조회]
+    Y --> Z[회원 정보 조회]
+    Z --> AA[환불 정보 계산]
+    
+    AA --> AB{이용료 결제?}
+    AB -->|Yes| AC[func_refund_paymt_proc]
+    AB -->|No| AD[다음 단계]
+    
+    AC --> AD
+    AD --> AE{위약금 있음?}
+    AE -->|Yes| AF[func_refund_deposit_paymt_proc]
+    AE -->|No| AG[다음 단계]
+    
+    AF --> AG
+    AG --> AH{기타 비용?}
+    AH -->|Yes| AI[func_refund_etc_paymt_proc]
+    AH -->|No| AJ[다음 단계]
+    
+    AI --> AJ
+    AJ --> AK[func_refund_cancel_paymt_proc]
+    AK --> AL[결제 취소 처리]
+    
+    AL --> AM[func_refund_mgmt]
+    AM --> AN[refund_mgmt_tbl 저장]
+    
+    AN --> AO[func_refund_event]
+    AO --> AP[상품 상태 종료 처리]
+    
+    AP --> AQ[func_end_mem]
+    AQ --> AR{다른 이용 상품 있음?}
+    AR -->|No| AS[회원 상태 종료 처리]
+    AR -->|Yes| AT[완료]
+    
+    AS --> AT[완료]
+    AT --> AU[성공 메시지]
+    AU --> AV[Redirect: info_mem 페이지]
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>3. 데이터베이스 관계도 (결제)</h2>
+            <p class="description">
+                결제 시스템의 주요 테이블 관계를 보여줍니다.
+            </p>
+            <div class="mermaid">
+erDiagram
+    mem_info_detl_tbl ||--o{ buy_event_mgmt_tbl : has
+    sell_event_mgmt_tbl ||--o{ buy_event_mgmt_tbl : creates
+    buy_event_mgmt_tbl ||--|| paymt_mgmt_tbl : has
+    buy_event_mgmt_tbl ||--|| sales_mgmt_tbl : generates
+    buy_event_mgmt_tbl ||--o| recvb_hist_tbl : may_have
+    buy_event_mgmt_tbl ||--o| refund_mgmt_tbl : may_have
+    buy_event_mgmt_tbl ||--o| lockr_room : may_assign
+    paymt_mgmt_tbl ||--o| van_direct_hist : records
+    
+    mem_info_detl_tbl {
+        string MEM_SNO PK
+        string MEM_ID
+        string MEM_NM
+        string MEM_STAT
+    }
+    
+    sell_event_mgmt_tbl {
+        string SELL_EVENT_SNO PK
+        string SELL_EVENT_NM
+        number SELL_AMT
+        string CLAS_DV
+        string LOCKR_SET
+    }
+    
+    buy_event_mgmt_tbl {
+        string BUY_EVENT_SNO PK
+        string MEM_SNO FK
+        string SELL_EVENT_SNO FK
+        string EVENT_STAT
+        date EXR_S_DATE
+        date EXR_E_DATE
+        number BUY_AMT
+        number RECVB_AMT
+    }
+    
+    paymt_mgmt_tbl {
+        string PAYMT_MGMT_SNO PK
+        string BUY_EVENT_SNO FK
+        string PAYMT_MTHD
+        number PAYMT_AMT
+        string PAYMT_STAT
+    }
+    
+    sales_mgmt_tbl {
+        string SALES_MGMT_SNO PK
+        string BUY_EVENT_SNO FK
+        string PAYMT_MGMT_SNO FK
+        string SALES_DV
+        number PAYMT_AMT
+    }
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. 데이터베이스 관계도 (환불)</h2>
+            <p class="description">
+                환불 시스템의 주요 테이블 관계를 보여줍니다.
+            </p>
+            <div class="mermaid">
+erDiagram
+    buy_event_mgmt_tbl ||--o| refund_mgmt_tbl : creates
+    buy_event_mgmt_tbl ||--o{ paymt_mgmt_tbl : has
+    paymt_mgmt_tbl ||--o| van_direct_hist : records
+    buy_event_mgmt_tbl ||--o| lockr_room : may_have
+    
+    refund_mgmt_tbl {
+        string BUY_EVENT_SNO PK
+        string MEM_SNO
+        string SELL_EVENT_NM
+        number USE_AMT
+        number BUY_AMT
+        number REFUND_AMT
+        number PNALT_AMT
+        number ETC_AMT
+        date EXR_S_DATE
+        date EXR_E_DATE
+        number USE_DAY_CNT
+        number USE_CLAS_CNT
+    }
+    
+    paymt_mgmt_tbl {
+        string PAYMT_MGMT_SNO PK
+        string BUY_EVENT_SNO FK
+        string PAYMT_MTHD
+        number PAYMT_AMT
+        string PAYMT_STAT
+        date PAYMT_DATE
+        date REFUND_DATE
+    }
+    
+    van_direct_hist {
+        string PAYMT_VAN_SNO PK
+        string BUY_EVENT_SNO FK
+        string APPNO
+        number PAYMT_AMT
+        string PAYMT_STAT
+        date REFUND_DATE
+    }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

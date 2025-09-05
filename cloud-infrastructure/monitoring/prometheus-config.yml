@@ -1,0 +1,113 @@
+# Prometheus 구성 파일 - SPOQ Plus 모니터링
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'spoqplus-monitor'
+    environment: 'production'
+
+# Alertmanager 구성
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 규칙 파일 로드
+rule_files:
+  - "alerts/*.yml"
+
+# 스크레이프 구성
+scrape_configs:
+  # Prometheus 자체 모니터링
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter - 시스템 메트릭
+  - job_name: 'node'
+    static_configs:
+      - targets: 
+        - 'node-exporter:9100'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(:[0-9]+)?'
+        replacement: '${1}'
+
+  # MySQL Exporter - 데이터베이스 메트릭
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql-exporter:9104']
+    params:
+      collect[]:
+        - info_schema.innodb_metrics
+        - info_schema.processlist
+        - info_schema.tables
+        - perf_schema.table_io_waits_summary_by_table
+        - perf_schema.events_statements_summary_by_digest
+
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # PHP-FPM Exporter
+  - job_name: 'php-fpm'
+    static_configs:
+      - targets: ['php-fpm-exporter:9253']
+
+  # Nginx Exporter
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # 애플리케이션 메트릭 (사용자 정의)
+  - job_name: 'spoqplus-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['web:8080']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'spoqplus_.*'
+        action: keep
+
+  # Face Recognition Service 메트릭
+  - job_name: 'face-recognition'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['face-api:5001']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'face_recognition_.*'
+        action: keep
+
+  # Blackbox Exporter - 엔드포인트 모니터링
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://spoqplus.example.com
+        - https://spoqplus.example.com/health
+        - http://face-api:5001/api/face/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # 로그 메트릭 (Promtail/Loki 연동)
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+
+# 메트릭 저장 정책
+metric_relabel_configs:
+  - source_labels: [__name__]
+    regex: '(go_|process_|promhttp_).*'
+    action: drop  # 불필요한 Go 메트릭 제거

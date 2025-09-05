@@ -1,0 +1,184 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# SpoqPlus Troubleshooting Methodology
+
+## 🔍 Systematic Problem Analysis
+
+### 1. Problem Definition Phase
+- **Symptom Documentation**: Record exact user-reported behavior
+- **Reproduction Steps**: Create detailed steps to reproduce the issue
+- **Expected vs Actual**: Define what should happen vs what actually happens
+- **Impact Assessment**: Determine if issue affects data integrity, UI, or both
+
+### 2. Initial Investigation
+- **Console Logging**: Check browser developer tools for JavaScript errors
+- **Network Analysis**: Examine AJAX requests/responses in Network tab
+- **Database Verification**: Confirm if data operations are successful
+- **Environment Check**: Verify similar issues across different browsers/users
+
+## 🗂️ Code Investigation Strategy
+
+### File Priority for Calendar Issues
+1. **Frontend Logic**: [public/dist/js/amajs/ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js)
+2. **View Templates**: [app/Views/tchr/tcoffmain/grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php) 
+3. **Backend Controllers**: [app/Controllers/Tbcoffmain.php](mdc:app/Controllers/Tbcoffmain.php)
+4. **Data Models**: [app/Models/CalendarModel.php](mdc:app/Models/CalendarModel.php)
+
+### Search Strategies
+- **Semantic Search**: Use natural language to find relevant code sections
+- **Exact Pattern Search**: Use grep for specific function names or error messages  
+- **File Structure Review**: Understand data flow before diving into specific functions
+- **Cross-Reference**: Check how similar functionality works elsewhere
+
+## 🐛 Common Issue Categories
+
+### 1. Data Not Displaying
+**Typical Causes**:
+- Missing AJAX refresh after data modification
+- Event source not updated after operations
+- Incorrect date/time range filtering
+- Missing required data properties
+
+**Investigation Steps**:
+1. Check if data exists in database
+2. Verify AJAX endpoints return correct data
+3. Confirm frontend processes the data correctly
+4. Ensure refresh functions are called after modifications
+
+### 2. Visual Display Issues (Flickering/Layout)
+**Typical Causes**:
+- Multiple DOM manipulations in rapid succession
+- Conflicting CSS animations
+- Redundant event handlers
+- Heavy DOM operations during render
+
+**Investigation Steps**:
+1. Identify DOM manipulation functions
+2. Check for multiple event handlers on same elements
+3. Review CSS for animation conflicts
+4. Monitor performance during problematic actions
+
+### 3. Inconsistent Behavior
+**Typical Causes**:
+- Different code paths for similar operations
+- Inconsistent data processing between functions
+- Missing edge case handling
+- State management issues
+
+**Investigation Steps**:
+1. Map all code paths for the problematic workflow
+2. Compare data processing between different functions
+3. Test edge cases and boundary conditions
+4. Verify state consistency across operations
+
+## 🛠️ Debugging Workflow
+
+### Phase 1: Information Gathering
+```javascript
+// Add comprehensive logging
+console.log('🔍 Function called with params:', params);
+console.log('📊 Current state:', getCurrentState());
+console.log('💾 Data received:', responseData);
+```
+
+### Phase 2: Isolation Testing
+- Test individual components in isolation
+- Disable potentially interfering functionality
+- Use browser dev tools to manually trigger functions
+- Create minimal reproduction cases
+
+### Phase 3: Systematic Resolution
+1. **Start with smallest fix** that addresses the symptom
+2. **Test thoroughly** before proceeding to complex changes
+3. **Document changes** with clear comments
+4. **Verify no regressions** in related functionality
+
+### Phase 4: Validation
+- **User Acceptance**: Verify fix addresses original user complaint
+- **Regression Testing**: Ensure related features still work
+- **Performance Check**: Confirm no performance degradation
+- **Cross-browser Testing**: Verify fix works across environments
+
+## 📋 Issue Documentation Template
+
+```markdown
+## Issue: [Brief Description]
+
+### Symptoms
+- What the user reported
+- When it occurs
+- Affected functionality
+
+### Root Cause Analysis
+- Technical cause identified
+- Why it wasn't caught earlier
+- Related code areas
+
+### Solution Implemented
+- What was changed
+- Why this approach was chosen
+- Files modified
+
+### Testing Performed
+- Reproduction verification
+- Regression testing
+- Edge case validation
+
+### Prevention
+- How to avoid similar issues
+- Code patterns to follow/avoid
+```
+
+## 🎯 Specific SpoqPlus Patterns
+
+### Calendar Data Flow Issues
+1. **Check Event Loading**: Verify `ajax_call_events()` parameters and response
+2. **Validate Time Properties**: Ensure `extendedProps` contains required time data
+3. **Confirm Refresh Calls**: After any data modification, appropriate refresh must be called
+4. **Review Date Calculations**: Week range and date formatting often cause issues
+
+### DOM Manipulation Problems
+1. **Identify Heavy Functions**: Look for functions with multiple `.each()` loops
+2. **Check Animation Conflicts**: CSS transitions + JavaScript DOM changes = flicker
+3. **Minimize Reflows**: Batch DOM operations when possible
+4. **Use Existing Utilities**: Prefer established refresh functions over custom solutions
+
+### AJAX Integration Issues
+1. **Standardize Response Format**: All endpoints should use consistent JSON structure
+2. **Handle Edge Cases**: Login expiration, network errors, empty responses
+3. **Validate Parameters**: Both client and server-side validation required
+4. **Maintain State**: Ensure UI state matches server state after operations
+
+## 🚀 Performance Investigation
+
+### Profiling Tools
+- **Browser DevTools Performance Tab**: Identify expensive operations
+- **Console.time()**: Measure specific function execution times
+- **Network Tab**: Check AJAX request timing and payload sizes
+- **Memory Tab**: Detect memory leaks in long-running pages
+
+### Common Performance Issues
+- **Excessive DOM Queries**: Cache jQuery selectors
+- **Redundant AJAX Calls**: Implement proper caching/debouncing
+- **Heavy Event Handlers**: Use event delegation for dynamic content
+- **Large Data Sets**: Implement pagination or virtual scrolling
+
+## 📚 Knowledge Building
+
+### Documentation After Resolution
+1. **Update Code Comments**: Explain why specific solutions were chosen
+2. **Create Test Cases**: Document scenarios that should be tested
+3. **Share Knowledge**: Document patterns for team reference
+4. **Update Architecture Notes**: Record changes to system design
+
+### Continuous Improvement
+- **Review Similar Issues**: Look for patterns across different problems
+- **Refactor Common Solutions**: Extract reusable utility functions
+- **Improve Error Handling**: Add better validation and user feedback
+- **Enhance Logging**: Add strategic console logging for future debugging
+
+This methodology provides a systematic approach to troubleshooting complex issues in the SpoqPlus system while building institutional knowledge for future maintenance.
+

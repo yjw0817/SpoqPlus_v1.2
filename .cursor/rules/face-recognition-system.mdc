@@ -1,0 +1,245 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# SpoqPlus 안면인식 시스템 구현 가이드
+
+이 문서는 MediaPipe 기반 안면인식 시스템의 설계 및 구현 가이드입니다.
+
+## 시스템 아키텍처
+
+### 서버 구조: 동일 서버 내 프로세스
+- **웹서버**: CodeIgniter 4 (Port 8080)
+- **얼굴인식서버**: Python Flask (Port 5000)
+- **통신**: REST API (localhost)
+- **데이터베이스**: MySQL
+
+## 기술 스택 및 라이브러리
+
+### 클라이언트 (JavaScript)
+- **MediaPipe**: 얼굴 디텍션 및 랜드마크 (468개 포인트)
+- **Face Mesh**: 정밀한 얼굴 분석
+- **Face Detection**: 얼굴 영역 감지
+- **기존**: SweetAlert2, jQuery (현재 체크인 시스템과 통합)
+
+### 서버 (Python)
+- **face_recognition**: 인코딩 생성 및 비교
+- **OpenCV**: 이미지 전처리
+- **MediaPipe**: 서버 검증용
+- **Flask**: REST API 서버
+- **scikit-learn**: 코사인 유사도 계산
+- **mysql-connector-python**: 데이터베이스 연결
+
+## 보안 레벨: 3단계 + 안경 인식
+
+### 1단계: 기본 보안 체크
+```javascript
+검증 항목:
+- 얼굴 개수: 1개만 허용
+- 얼굴 크기: 적절한 크기 범위
+- 얼굴 위치: 화면 중앙 배치
+- 이미지 품질: 조명, 선명도 확인
+```
+
+### 2단계: 생체 감지 (Liveness Detection)
+```javascript
+생체 감지 요소:
+- 눈 깜빡임 패턴 분석 (3-4초간 모니터링)
+- 자연스러운 헤드 움직임 감지
+- 품질 일관성 검사
+- 픽셀 변화 패턴 분석
+- EAR (Eye Aspect Ratio) 계산
+```
+
+### 3단계: 랜덤 액션 + 고급 검증
+```javascript
+랜덤 액션 목록:
+- "눈을 천천히 3번 깜빡여주세요" (6초)
+- "웃어주세요" (3초)
+- "고개를 좌우로 천천히 돌려주세요" (5초)
+
+검증 방법:
+- 액션 수행 실시간 검증
+- 자연스러운 움직임 패턴 확인
+- 최종 품질 점수 계산
+```
+
+### 안경 인식 알고리즘
+```javascript
+감지 방법:
+- MediaPipe 랜드마크 기반 분석
+- 눈썹-눈 사이 거리 측정
+- 코다리 부분 그림자 감지
+- 안경테 반사광 패턴 분석
+- 신뢰도 임계값: 0.7 이상
+```
+
+## 데이터베이스 설계
+
+### member_faces 테이블 (확장)
+```sql
+- face_encoding: TEXT (128차원 임베딩 벡터, JSON)
+- glasses_detected: TINYINT(1) (안경 착용 여부)
+- quality_score: DECIMAL(3,2) (이미지 품질 0.00-1.00)
+- security_level: INT (등록시 보안 레벨)
+- liveness_score: DECIMAL(3,2) (생체 감지 점수)
+```
+
+### face_recognition_logs 테이블 (확장)
+```sql
+- glasses_detected: TINYINT(1) (인식시 안경 상태)
+- match_category: VARCHAR(20) (normal/glasses/cross)
+- security_checks_passed: TEXT (통과한 보안 체크)
+- processing_time_ms: INT (처리 시간)
+```
+
+## API 설계
+
+### CodeIgniter 4 엔드포인트
+- `POST /api/recognize_face_embedding` - 얼굴 인식 (임베딩 전송)
+- `POST /api/register_face_advanced` - 얼굴 등록
+- `GET /api/face_service_status` - 서비스 상태 확인
+
+### Python Flask 엔드포인트
+- `POST /api/face/recognize_advanced` - 고급 얼굴 인식
+- `POST /api/face/register_advanced` - 조건별 얼굴 등록
+- `GET /api/face/health` - 헬스체크
+- `POST /api/face/reload` - 얼굴 DB 재로드
+
+## 성능 최적화 전략
+
+### 클라이언트 최적화
+- 임베딩 벡터만 전송 (1KB 미만)
+- 실시간 피드백으로 사용자 경험 향상
+- 보안 체크 단계별 진행 표시
+
+### 서버 최적화
+```python
+최적화 요소:
+- 메모리 내 얼굴 데이터베이스 로드
+- NumPy 벡터 연산 활용
+- 코사인 유사도 기반 빠른 비교
+- 안경 상태별 분리된 매칭
+- 응답 시간: 50-200ms 목표
+```
+
+## 보안 설정값
+
+### 임계값 설정
+```javascript
+보안 임계값:
+- 얼굴 인식 신뢰도: 0.6 이상
+- 생체 감지 점수: 0.6 이상
+- 이미지 품질 점수: 0.7 이상
+- 안경 감지 신뢰도: 0.7 이상
+- 처리 시간 제한: 30초
+- EAR 깜빡임 임계값: 0.25 미만
+```
+
+## 구현 파일 구조
+
+### 클라이언트 파일
+- [app/Views/tchr/teventmem/checkin.php](mdc:app/Views/tchr/teventmem/checkin.php) - 기존 체크인 페이지 확장
+- MediaPipe 라이브러리 CDN 추가
+- 안면인식 모달 및 JavaScript 클래스 추가
+
+### 서버 파일
+- `face_recognition_service/enhanced_face_service.py` - 메인 Python 서비스
+- `face_recognition_service/requirements.txt` - Python 패키지 목록
+- [app/Controllers/FaceApi.php](mdc:app/Controllers/FaceApi.php) - CodeIgniter API 컨트롤러
+- [app/Libraries/FaceServiceMonitor.php](mdc:app/Libraries/FaceServiceMonitor.php) - 모니터링
+
+### 설정 파일
+- [app/Config/Routes.php](mdc:app/Config/Routes.php) - 라우트 추가
+- `face_recognition_service/config.py` - Python 서비스 설정
+- 데이터베이스 마이그레이션 파일
+
+## 구현 단계
+
+### Phase 1: 기본 구현
+1. MediaPipe 클라이언트 기본 구조
+2. Python 서버 기본 기능
+3. 데이터베이스 테이블 생성
+4. 1-2단계 보안 체크
+
+### Phase 2: 보안 강화
+1. 3단계 보안 체크 완성
+2. 안경 감지 기능 추가
+3. 생체 감지 고도화
+4. 에러 처리 및 Fallback
+
+### Phase 3: 최적화 및 운영
+1. 성능 튜닝
+2. 모니터링 시스템
+3. 관리자 대시보드
+4. 로그 분석 도구
+
+## MediaPipe 구현 핵심
+
+### JavaScript 클래스 구조
+```javascript
+class MediaPipeFaceRecognition {
+    constructor() {
+        this.faceMesh = null;
+        this.faceDetection = null;
+        this.blinkHistory = [];
+        this.headPoseHistory = [];
+        this.qualityHistory = [];
+    }
+    
+    // 핵심 메서드들
+    async performSecurityChecks(videoElement);
+    detectGlasses(landmarks);
+    livenessDetection(videoElement);
+    requestRandomAction();
+    calculateLivenessScore();
+}
+```
+
+### 안경 감지 구현
+```javascript
+안경 감지 로직:
+- 눈썹 랜드마크: 70 (왼쪽), 107 (오른쪽)
+- 눈 랜드마크: 33 (왼쪽), 263 (오른쪽)
+- 코다리 랜드마크: 6
+- 거리 계산 및 그림자 분석
+- 점수 기반 판정 (0.7 이상)
+```
+
+## 기존 시스템 통합
+
+### 체크인 플로우 연동
+```javascript
+기존 플로우:
+1. 회원번호/전화번호/QR 입력
+2. 이용권 조회
+3. 이용권 선택
+4. 체크인 완료
+
+새로운 플로우:
+1. 안면인식 버튼 클릭
+2. 3단계 보안 체크 수행
+3. 얼굴 인식 및 회원 식별
+4. 기존 이용권 조회 플로우 진입
+```
+
+## 에러 처리 및 Fallback
+
+### 장애 대응
+```php
+Fallback 순서:
+1. REST API 호출 시도
+2. 직접 Python 스크립트 실행
+3. 기본 인증 방식 안내
+4. 에러 로그 기록 및 모니터링
+```
+
+## 모니터링 및 운영
+
+### 상태 확인
+- 헬스체크 API 주기적 호출
+- 메모리 사용량 모니터링 (90% 이상시 경고)
+- 로딩된 얼굴 수 확인
+- 처리 시간 통계
+- 인식 성공률 추적

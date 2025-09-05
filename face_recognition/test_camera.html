@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Camera Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header { 
+            text-align: center; 
+            color: #333; 
+            margin-bottom: 30px; 
+        }
+        .camera-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        video {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            max-width: 100%;
+        }
+        canvas {
+            display: none;
+        }
+        .button-group { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button { 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-info { background: #17a2b8; color: white; }
+        .result { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { 
+            background: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            color: #155724; 
+        }
+        .error { 
+            background: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            color: #721c24; 
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .preview-image {
+            max-width: 200px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 Face Recognition Camera Test</h1>
+            <p>웹캠을 사용한 얼굴 인식 테스트</p>
+            <div id="serverStatus">
+                <span class="status-indicator status-offline"></span>
+                서버 상태 확인 중...
+            </div>
+        </div>
+        
+        <div class="camera-container">
+            <video id="videoElement" width="640" height="480" autoplay></video>
+            <canvas id="canvasElement" width="640" height="480"></canvas>
+            <img id="capturedImage" class="preview-image" style="display:none;">
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-success" onclick="startCamera()">📷 카메라 시작</button>
+            <button class="btn-danger" onclick="stopCamera()">⏹️ 카메라 정지</button>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="captureAndRecognize()">🔍 얼굴 인식</button>
+            <button class="btn-info" onclick="captureAndDetect()">🔎 얼굴 검출</button>
+            <button class="btn-warning" onclick="captureAndRegister()">📝 얼굴 등록</button>
+        </div>
+        
+        <div id="memberInput" style="display:none; text-align:center; margin: 20px;">
+            <input type="text" id="memberNo" placeholder="회원번호 입력" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button class="btn-success" onclick="confirmRegister()">등록 확인</button>
+            <button class="btn-danger" onclick="cancelRegister()">취소</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        let cameraStream = null;
+        let capturedImageData = null;
+        const SERVER_URL = 'http://localhost:5002';
+        
+        // 서버 상태 확인
+        async function checkServerStatus() {
+            const statusElement = document.getElementById('serverStatus');
+            try {
+                const response = await fetch(`${SERVER_URL}/api/face/health`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusElement.innerHTML = `
+                        <span class="status-indicator status-online"></span>
+                        서버 온라인 - ${data.service} v${data.version}
+                    `;
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                statusElement.innerHTML = `
+                    <span class="status-indicator status-offline"></span>
+                    서버 오프라인 - ${SERVER_URL}에서 서버를 시작해주세요
+                `;
+            }
+        }
+        
+        // 카메라 시작
+        async function startCamera() {
+            const videoElement = document.getElementById('videoElement');
+            
+            try {
+                // 기존 스트림이 있으면 종료
+                if (cameraStream) {
+                    stopCamera();
+                }
+                
+                // 카메라 권한 요청 및 스트림 가져오기
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user' // 전면 카메라 우선
+                    } 
+                });
+                
+                videoElement.srcObject = cameraStream;
+                showResult('카메라가 시작되었습니다.', 'info');
+                
+            } catch (error) {
+                showResult(`카메라 접근 오류: ${error.message}`, 'error');
+                console.error('카메라 오류:', error);
+            }
+        }
+        
+        // 카메라 정지
+        function stopCamera() {
+            const videoElement = document.getElementById('videoElement');
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                videoElement.srcObject = null;
+                showResult('카메라가 정지되었습니다.', 'info');
+            }
+        }
+        
+        // 이미지 캡처
+        function captureImage() {
+            const videoElement = document.getElementById('videoElement');
+            const canvasElement = document.getElementById('canvasElement');
+            const context = canvasElement.getContext('2d');
+            
+            // 비디오 프레임을 캔버스에 그리기
+            context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // 캔버스를 Base64로 변환
+            const imageDataUrl = canvasElement.toDataURL('image/jpeg', 0.9);
+            
+            // 미리보기 표시
+            const previewImage = document.getElementById('capturedImage');
+            previewImage.src = imageDataUrl;
+            previewImage.style.display = 'inline-block';
+            
+            return imageDataUrl;
+        }
+        
+        // 얼굴 인식
+        async function captureAndRecognize() {
+            if (!cameraStream) {
+                showResult('먼저 카메라를 시작해주세요.', 'error');
+                return;
+            }
+            
+            const imageData = captureImage();
+            showResult('얼굴 인식 중...', 'info');
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/face/recognize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imageData,
+                        param1: 'TEST',
+                        param2: 'CAM'
+                    })
+                });
+                
+                const data = await response.json();
+                displayDetailedResult(data, '얼굴 인식');
+                
+            } catch (error) {
+                showResult(`인식 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 얼굴 검출
+        async function captureAndDetect() {
+            if (!cameraStream) {
+                showResult('먼저 카메라를 시작해주세요.', 'error');
+                return;
+            }
+            
+            const imageData = captureImage();
+            showResult('얼굴 검출 중...', 'info');
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/face/detect_for_registration`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: imageData,
+                        param1: 'TEST',
+                        param2: 'CAM'
+                    })
+                });
+                
+                const data = await response.json();
+                displayDetailedResult(data, '얼굴 검출');
+                
+            } catch (error) {
+                showResult(`검출 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 얼굴 등록
+        function captureAndRegister() {
+            if (!cameraStream) {
+                showResult('먼저 카메라를 시작해주세요.', 'error');
+                return;
+            }
+            
+            capturedImageData = captureImage();
+            document.getElementById('memberInput').style.display = 'block';
+            document.getElementById('memberNo').focus();
+        }
+        
+        // 등록 확인
+        async function confirmRegister() {
+            const memberNo = document.getElementById('memberNo').value;
+            
+            if (!memberNo) {
+                alert('회원번호를 입력해주세요.');
+                return;
+            }
+            
+            showResult('얼굴 등록 중...', 'info');
+            document.getElementById('memberInput').style.display = 'none';
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/face/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mem_sno: memberNo,
+                        image: capturedImageData,
+                        param1: 'TEST',
+                        param2: 'CAM'
+                    })
+                });
+                
+                const data = await response.json();
+                displayDetailedResult(data, '얼굴 등록');
+                
+                if (data.success && data.face_saved) {
+                    document.getElementById('memberNo').value = '';
+                }
+                
+            } catch (error) {
+                showResult(`등록 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        // 등록 취소
+        function cancelRegister() {
+            document.getElementById('memberInput').style.display = 'none';
+            document.getElementById('memberNo').value = '';
+            capturedImageData = null;
+        }
+        
+        // 결과 표시
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+        }
+        
+        // 상세 결과 표시
+        function displayDetailedResult(data, operation) {
+            const resultDiv = document.getElementById('result');
+            const isSuccess = data.success || data.face_detected || data.matched;
+            
+            let html = `<div class="result ${isSuccess ? 'success' : 'error'}">`;
+            html += `<h3>📊 ${operation} 결과</h3>`;
+            html += `<div style="margin: 10px 0;">`;
+            
+            // 주요 정보 표시
+            if (data.matched) {
+                html += `<div>✅ <strong>인식 성공!</strong> 회원번호: ${data.member_id}</div>`;
+                html += `<div>📊 신뢰도: ${(data.similarity * 100).toFixed(1)}%</div>`;
+            } else if (data.face_saved) {
+                html += `<div>✅ <strong>등록 성공!</strong> 회원번호: ${data.member_id}</div>`;
+            } else if (data.face_detected !== undefined) {
+                html += `<div>얼굴 검출: ${data.face_detected ? '✅ 성공' : '❌ 실패'}</div>`;
+                html += `<div>등록 적합성: ${data.suitable_for_registration ? '✅ 적합' : '❌ 부적합'}</div>`;
+            }
+            
+            // 품질 정보
+            if (data.quality_score !== undefined) {
+                const qualityPercent = (data.quality_score * 100).toFixed(1);
+                const qualityColor = data.quality_score >= 0.7 ? 'green' : data.quality_score >= 0.5 ? 'orange' : 'red';
+                html += `<div>품질 점수: <span style="color:${qualityColor}; font-weight:bold;">${qualityPercent}%</span></div>`;
+            }
+            
+            // 권장사항
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += `<div style="margin-top: 10px;"><strong>💡 권장사항:</strong>`;
+                html += '<ul style="margin: 5px 0;">';
+                data.recommendations.forEach(rec => {
+                    html += `<li>${rec}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            // 처리 시간
+            if (data.processing_time_ms !== undefined) {
+                html += `<div style="margin-top: 10px; color: #666;">⏱️ 처리 시간: ${data.processing_time_ms}ms</div>`;
+            }
+            
+            html += `</div>`;
+            
+            // 전체 JSON 표시
+            html += `<details style="margin-top: 10px;">`;
+            html += `<summary style="cursor: pointer;">전체 응답 데이터 보기</summary>`;
+            html += `<pre style="margin-top: 5px; font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>`;
+            html += `</details>`;
+            
+            html += `</div>`;
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        // 페이지 로드 시 서버 상태 확인
+        window.onload = function() {
+            checkServerStatus();
+            // 5초마다 서버 상태 확인
+            setInterval(checkServerStatus, 5000);
+        };
+        
+        // 페이지 떠날 때 카메라 정지
+        window.onbeforeunload = function() {
+            stopCamera();
+        };
+    </script>
+</body>
+</html>

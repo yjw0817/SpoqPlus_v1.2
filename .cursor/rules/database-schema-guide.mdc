@@ -1,0 +1,124 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Database Schema and Field Naming Guide
+
+## Core Database Tables
+
+### Schedule Management Table: `gx_schd_mgmt_tbl`
+**Primary Fields** (use exact names):
+```sql
+GX_SCHD_MGMT_SNO        int(14)         -- Primary key
+GX_ROOM_MGMT_SNO        varchar(20)     -- Room identifier
+COMP_CD                 varchar(20)     -- Company code
+BCOFF_CD                varchar(20)     -- Branch office code
+GX_STCHR_SNO            varchar(20)     -- Teacher serial number
+GX_STCHR_ID             varchar(30)     -- Teacher ID
+GX_STCHR_NM             varchar(100)    -- Teacher name
+GX_CLAS_TITLE           varchar(256)    -- Class title
+GX_CLAS_S_DATE          varchar(10)     -- Start date
+GX_CLAS_E_DATE          varchar(10)     -- End date
+GX_CLAS_DOTW            varchar(8)      -- Days of the week
+GX_CLAS_S_HH_II         varchar(8)      -- Start time (HHMM)
+GX_CLAS_E_HH_II         varchar(8)      -- End time (HHMM)
+GX_CLAS_COLOR           varchar(100)    -- Display color
+GX_CLASS_MIN            int(3)          -- Class duration in minutes
+GX_DEDUCT_CNT           int(3)          -- Deduction count
+GX_MAX_NUM              int(3)          -- Maximum participants
+GX_MAX_WAITING          int(3)          -- Maximum waiting list
+AUTO_SHOW_YN            varchar(1)      -- Auto show flag
+AUTO_SHOW_D             int(3)          -- Auto show days
+AUTO_SHOW_UNIT          varchar(4)      -- Auto show unit
+AUTO_SHOW_WEEK          int(1)          -- Auto show week
+AUTO_SHOW_WEEK_DUR      int(2)          -- Auto show week duration
+AUTO_SHOW_TIME          time            -- Auto show time
+AUTO_CLOSE_YN           varchar(1)      -- Auto close flag
+AUTO_CLOSE_MIN          time            -- Auto close time (TIME format)
+AUTO_CLOSE_MIN_NUM      int(3)          -- Auto close minimum number
+RESERV_D                int(3)          -- Reservation days
+USE_RESERV_YN           varchar(1)      -- Use reservation flag
+PAY_FOR_ZERO_YN         varchar(1)      -- Pay for zero flag
+USE_PAY_RATE_YN         varchar(1)      -- Use pay rate flag
+SELECTED_IMAGE_ID       int(11)         -- Selected image ID
+CRE_ID                  varchar(30)     -- Creator ID
+CRE_DATETM              timestamp       -- Creation datetime
+MOD_ID                  varchar(30)     -- Modifier ID
+MOD_DATETM              timestamp       -- Modification datetime
+```
+
+## Common Field Naming Mistakes
+
+### ❌ WRONG Field Names (Never Use These):
+- `GX_CLAS_MIN` → **Use**: `GX_CLASS_MIN`
+- `USEPAYROLLFORMGT_YN` → **Use**: `USE_PAY_RATE_YN`
+
+### ⚠️ Special Data Types:
+- `AUTO_CLOSE_MIN` is **TIME** type → Use `'00:30:00'` format, NOT integer
+- `AUTO_SHOW_TIME` is **TIME** type → Use `'13:00:00'` format
+- `GX_CLAS_S_HH_II` and `GX_CLAS_E_HH_II` are **varchar** → Use `'0900'`, `'1030'` format
+
+## Code Integration Points
+
+### Model Usage in [CalendarModel.php](mdc:app/Models/CalendarModel.php):
+Always verify field names match database schema before writing queries:
+```php
+// Correct field usage
+$data = [
+    'GX_CLASS_MIN' => $duration,          // NOT GX_CLAS_MIN
+    'USE_PAY_RATE_YN' => $payRateFlag,    // NOT USEPAYROLLFORMGT_YN
+    'AUTO_CLOSE_MIN' => '00:30:00',       // TIME format, NOT integer
+];
+```
+
+### JavaScript Field Mapping:
+When processing AJAX responses in [ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js):
+```javascript
+// Access database fields correctly
+var duration = event.GX_CLASS_MIN;       // NOT GX_CLAS_MIN
+var startTime = event.GX_CLAS_S_HH_II;   // Start time in HHMM format
+var endTime = event.GX_CLAS_E_HH_II;     // End time in HHMM format
+```
+
+## Validation Rules
+
+### Before Database Operations:
+1. **Verify field names** against actual table schema
+2. **Check data types** - especially TIME fields vs integers
+3. **Test queries** in database before implementing in code
+4. **Validate foreign keys** exist (GX_ROOM_MGMT_SNO, etc.)
+
+### Time Format Handling:
+- **Database Storage**: TIME type fields use `'HH:MM:SS'` format
+- **Display Format**: Convert to `'HH:MM'` for user interface
+- **Input Format**: HHMM string format for time fields like `GX_CLAS_S_HH_II`
+
+## Related Tables and Foreign Keys
+
+### Room Management: `gx_room_mgmt_tbl`
+- Primary key: `GX_ROOM_MGMT_SNO`
+- Referenced by schedule table for room associations
+
+### Teacher Management: `gx_stchr_tbl`
+- Primary key: `GX_STCHR_SNO`
+- Contains teacher information for schedule assignments
+
+### Item Management: `gx_item_tbl`
+- Primary key: `GX_ITEM_SNO`
+- Contains class/item definitions used in schedules
+
+## Migration and Schema Changes
+
+### When Adding New Fields:
+1. Update database schema first
+2. Update [CalendarModel.php](mdc:app/Models/CalendarModel.php) with new field mappings
+3. Update JavaScript code to handle new fields
+4. Test all CRUD operations with new fields
+
+### When Modifying Existing Fields:
+1. Check all references in codebase
+2. Update both PHP and JavaScript code
+3. Verify field type compatibility
+4. Test data migration if needed
+

@@ -1,0 +1,225 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# FullCalendar Integration Guide
+
+## Core Configuration
+
+### Calendar Initialization in [ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js)
+The calendar is initialized with specific patterns that must be maintained:
+
+```javascript
+window.calendar = new FullCalendar.Calendar(calendarEl, {
+    // Dynamic event source - NEVER replace this pattern
+    events: function(info, successCallback, failureCallback) {
+        var roomId = $('#gx_room_mgmt_sno').val(); // Dynamic room detection
+        // ... AJAX call with current room ID
+    },
+    
+    // Event handlers - always use refetchEvents() after CRUD
+    eventReceive: function(info) {
+        // ... save logic
+        window.calendar.refetchEvents(); // ✅ CORRECT
+    }
+});
+```
+
+## Critical Event Handling Patterns
+
+### ✅ CORRECT Pattern: Dynamic Event Loading
+```javascript
+// Always use this after any CRUD operation
+window.calendar.refetchEvents();
+
+// This triggers the 'events' function which:
+// 1. Gets current room ID: $('#gx_room_mgmt_sno').val()
+// 2. Makes AJAX call with current room
+// 3. Loads fresh data for current room
+```
+
+### ❌ WRONG Pattern: Static Event Sources
+```javascript
+// NEVER do this after CRUD operations - breaks room switching
+ajax_call_events(date);                    // Creates static source
+window.calendar.addEventSource(events);    // Creates static source
+window.calendar.addEvent(event);           // Creates static event
+
+// These patterns break room switching because:
+// - Static sources don't re-evaluate room ID
+// - Room changes won't trigger data reload
+// - Calendar shows stale data from previous room
+```
+
+## Event Handler Requirements
+
+### Essential Handlers That Must Use `refetchEvents()`:
+
+#### 1. External Item Drop (`eventReceive`)
+```javascript
+eventReceive: function(info) {
+    // ... AJAX save operation
+    $.ajax({
+        success: function(data) {
+            window.calendar.refetchEvents(); // ✅ Reload with current room
+        }
+    });
+}
+```
+
+#### 2. Event Move (`eventDrop`)
+```javascript
+eventDrop: function(info) {
+    // ... AJAX update operation
+    $.ajax({
+        success: function(data) {
+            window.calendar.refetchEvents(); // ✅ Reload with current room
+        }
+    });
+}
+```
+
+#### 3. Event Resize (`eventResize`)
+```javascript
+eventResize: function(info) {
+    // ... AJAX update operation
+    $.ajax({
+        success: function(data) {
+            window.calendar.refetchEvents(); // ✅ Reload with current room
+        }
+    });
+}
+```
+
+## Room Management Integration
+
+### Room Change Detection
+The calendar automatically handles room changes through the `events` function:
+
+```javascript
+events: function(info, successCallback, failureCallback) {
+    var roomId = $('#gx_room_mgmt_sno').val(); // Always current room
+    
+    if (!roomId) {
+        successCallback([]); // Empty calendar if no room selected
+        return;
+    }
+    
+    // AJAX call includes current room ID
+    $.ajax({
+        data: {
+            gx_room_mgmt_sno: roomId, // Dynamic room ID
+            // ... other parameters
+        }
+    });
+}
+```
+
+### Room Change Handler in [grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php)
+```javascript
+function updateCurrentRoomInfo(gx_room_mgmt_sno) {
+    // Update room selection
+    $('#gx_room_mgmt_sno').val(gx_room_mgmt_sno);
+    
+    // Trigger calendar reload with new room
+    window.calendar.refetchEvents(); // ✅ This works because events() gets new room ID
+}
+```
+
+## Data Flow Architecture
+
+### Request Flow:
+1. **User Action** → Room change, item drop, event move, etc.
+2. **AJAX Save** → Backend saves data to database
+3. **Success Callback** → `window.calendar.refetchEvents()`
+4. **Events Function** → Gets current room ID and loads fresh data
+5. **UI Update** → Calendar shows current room's data
+
+### Why This Pattern Works:
+- **Dynamic Detection**: `events` function always checks current room
+- **Consistency**: Same data loading logic for all scenarios
+- **Reliability**: No static data that becomes stale
+
+## Performance Optimization Settings
+
+### Rendering Optimization in [ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js):
+```javascript
+// Prevent flickering and improve performance
+lazyFetching: true,              // Cache events
+progressiveEventRendering: false, // Batch rendering
+rerenderDelay: 0,                // Immediate rendering
+eventStartEditable: true,        // Enable drag/drop
+eventDurationEditable: true,     // Enable resize
+```
+
+### Event Rendering Hooks:
+```javascript
+eventDidMount: function(info) {
+    // Disable animations during normal rendering
+    info.el.style.transition = 'none';
+    info.el.style.opacity = '1';
+},
+
+eventsSet: function(events) {
+    // Final optimization after all events rendered
+    $('.fc-event').css('transition', 'none');
+}
+```
+
+## Common Integration Issues
+
+### Issue: "Events disappear after room change"
+**Cause**: Using static event sources instead of dynamic `events` function
+**Solution**: Ensure all CRUD operations use `refetchEvents()`
+
+### Issue: "Calendar shows old room's data"
+**Cause**: Static event sources don't re-evaluate room selection
+**Solution**: Replace `addEventSource()` calls with `refetchEvents()`
+
+### Issue: "Performance problems/flickering"
+**Cause**: Multiple DOM manipulations or redundant event handlers
+**Solution**: Use batch rendering settings and minimal DOM changes
+
+## Testing Requirements
+
+### After Any Calendar Modification:
+1. **Basic Room Switch**: Change room → verify correct data loads
+2. **Add Item → Room Switch**: Drop external item → change room → verify works
+3. **Move Event → Room Switch**: Drag event → change room → verify works
+4. **Resize Event → Room Switch**: Resize event → change room → verify works
+5. **Navigate Dates → Room Switch**: Use prev/next → change room → verify works
+
+### Console Verification:
+Look for these logs to verify correct operation:
+```javascript
+// Correct: Dynamic room detection
+"📅 events 함수 호출: {roomId: 'ROOM123', ...}"
+
+// Correct: Using refetchEvents after CRUD
+"🎯 eventReceive: 원본 events 함수로 새로고침 - refetchEvents() 호출"
+```
+
+## Dependencies and Requirements
+
+### Required Elements in [grp_schedule.php](mdc:app/Views/tchr/tcoffmain/grp_schedule.php):
+```html
+<!-- Room selection element - MUST exist for dynamic detection -->
+<select id="gx_room_mgmt_sno" name="gx_room_mgmt_sno">
+    <!-- Room options -->
+</select>
+
+<!-- Calendar container -->
+<div id="calendar"></div>
+
+<!-- External events container for drag/drop -->
+<div id="external-events">
+    <!-- Draggable items -->
+</div>
+```
+
+### Backend Requirements in [Tbcoffmain.php](mdc:app/Controllers/Tbcoffmain.php):
+- Must accept `gx_room_mgmt_sno` parameter in all calendar data endpoints
+- Must filter data by room ID
+- Must return consistent JSON structure for events
+

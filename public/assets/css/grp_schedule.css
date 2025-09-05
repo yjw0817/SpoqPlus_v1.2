@@ -1,0 +1,1024 @@
+/* SpoqPlus Group Schedule Styles */
+/* 이용권 수 배지 스타일 - 좌측 상단으로 이동 */
+.ticket-count-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* 삭제 버튼을 우측 상단으로 이동 - 기존 스타일 유지 */
+.close5 {
+    position: absolute !important;
+    top:1px !important;
+    right: 3px !important;
+    z-index: 15 !important;
+    transform: scale(0.8) !important;
+}
+
+/* 컬러 피커 호버 회전 애니메이션 */
+.fc-color-picker li a {
+    transition: transform 0.4s ease;
+    display: inline-block;
+}
+
+.fc-color-picker li a:hover {
+    transform: rotate(30deg);
+}
+
+.fc-color-picker li a.selected {
+    transform: rotate(30deg);
+}
+
+/* 컬러 피커 버튼 간격 조정 */
+.fc-color-picker li {
+    margin-right: -1px;
+    margin-bottom: -2px; /* 줄간격을 1/3로 줄임 */
+    line-height: 0.33; /* 줄간격 추가 조정 */
+}
+
+.fc-color-picker {
+    line-height: 0.5; /* 전체 줄간격 조정 */
+}
+
+/* 사이드바 수업 버튼 기본 스타일 - 커서와 텍스트 선택 방지 */
+.external-event {
+    cursor: pointer !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+}
+
+/* 모달 z-index 설정 - 부모 모달보다 높게 */
+#modal-ticket-selection {
+    z-index: 1060 !important;
+}
+
+#modal-auto-schedule {
+    z-index: 1060 !important;
+}
+
+#modal-class-image {
+    z-index: 1060 !important;
+}
+
+/* 자식 모달의 backdrop도 부모 모달보다 높게 */
+.modal-backdrop.show {
+    z-index: 1059 !important;
+}
+
+/* 비활성화된 모달 스타일 */
+.modal-disabled {
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+}
+
+.modal-disabled * {
+    cursor: not-allowed !important;
+}
+
+/* 스케줄 수정 모달 전용 - 자식 모달이 열릴 때 z-index 조정 */
+#modal-schedule-edit.modal-disabled {
+    z-index: 1040 !important;
+}
+
+#modal-schedule-edit .modal-disabled {
+    z-index: 1040 !important;
+}
+
+/* 스케줄 수정 모달에서 자식 모달들이 열릴 때 더 높은 z-index */
+.schedule-image-modal-open #modal-class-image {
+    z-index: 1070 !important;
+}
+
+.schedule-image-modal-open #modal-ticket-selection {
+    z-index: 1070 !important;
+}
+
+.schedule-image-modal-open #modal-auto-schedule {
+    z-index: 1070 !important;
+}
+
+.schedule-image-modal-open #modal-settlement-setup {
+    z-index: 1070 !important;
+}
+
+.schedule-image-modal-open .modal-backdrop.show {
+    z-index: 1069 !important;
+}
+
+/* 밝은 배경색일 때 글자색을 진하게 */
+.external-event[style*="background-color: rgb(90, 200, 250)"],
+.external-event[style*="background-color: rgb(187, 226, 68)"],
+.external-event[style*="background-color: rgb(255, 204, 0)"],
+.external-event[style*="background-color: rgb(255, 149, 0)"],
+.external-event[style*="background-color: rgb(233, 233, 233)"] {
+    color: #333333 !important;
+    font-weight: bold !important;
+}
+
+/* 캘린더 이벤트에서도 동일 색상 적용 */
+.fc-event[style*="background-color: rgb(90, 200, 250)"],
+.fc-event[style*="background-color: rgb(187, 226, 68)"],
+.fc-event[style*="background-color: rgb(255, 204, 0)"],
+.fc-event[style*="background-color: rgb(255, 149, 0)"],
+.fc-event[style*="background-color: rgb(233, 233, 233)"] {
+    color: #333333 !important;
+    font-weight: bold !important;
+}
+
+/* 캘린더 이벤트 내부 텍스트 요소들에도 적용 */
+.fc-event[style*="background-color: rgb(90, 200, 250)"] .fc-event-time,
+.fc-event[style*="background-color: rgb(90, 200, 250)"] .fc-event-title,
+.fc-event[style*="background-color: rgb(187, 226, 68)"] .fc-event-time,
+.fc-event[style*="background-color: rgb(187, 226, 68)"] .fc-event-title,
+.fc-event[style*="background-color: rgb(255, 204, 0)"] .fc-event-time,
+.fc-event[style*="background-color: rgb(255, 204, 0)"] .fc-event-title,
+.fc-event[style*="background-color: rgb(255, 149, 0)"] .fc-event-time,
+.fc-event[style*="background-color: rgb(255, 149, 0)"] .fc-event-title,
+.fc-event[style*="background-color: rgb(233, 233, 233)"] .fc-event-time,
+.fc-event[style*="background-color: rgb(233, 233, 233)"] .fc-event-title {
+    color: #333333 !important;
+    font-weight: bold !important;
+}
+
+/* 더 구체적인 선택자로 캘린더 이벤트 타겟 */
+.fc-timegrid-event[style*="background-color: rgb(90, 200, 250)"],
+.fc-timegrid-event[style*="background-color: rgb(187, 226, 68)"],
+.fc-timegrid-event[style*="background-color: rgb(255, 204, 0)"],
+.fc-timegrid-event[style*="background-color: rgb(255, 149, 0)"],
+.fc-timegrid-event[style*="background-color: rgb(233, 233, 233)"] {
+    color: #333333 !important;
+    font-weight: bold !important;
+}
+
+/* 버튼의 밝은 배경색일 때 글자색 조정 */
+#add-new-event2[style*="background-color: rgb(90, 200, 250)"],
+#add-new-event2[style*="background-color: rgb(187, 226, 68)"],
+#add-new-event2[style*="background-color: rgb(255, 204, 0)"],
+#add-new-event2[style*="background-color: rgb(255, 149, 0)"],
+#add-new-event2[style*="background-color: rgb(233, 233, 233)"] {
+    color: #333333 !important;
+    font-weight: bold !important;
+}
+
+/* 이벤트 내용만 중앙정렬 (블록 크기는 유지) */
+.fc-event-title {
+    text-align: center !important;
+}
+
+.fc-event-time {
+    text-align: center !important;
+}
+
+.fc-event-main-frame {
+    text-align: center !important;
+}
+
+/* 세로 중앙정렬 추가 */
+.fc-event-main {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 100% !important;
+    text-align: center !important;
+}
+
+/* 필터 버튼 스타일 */
+.filter-btn {
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+.filter-btn.active {
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* 전체 버튼 특별한 hover 효과 - outlined 스타일 */
+.filter-btn[data-filter="all"]:hover {
+    background-color: transparent;
+    border-color: #495057;
+    color: #495057;
+    border-width: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.fc-timegrid-event .fc-event-main {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* 캘린더 이벤트 아이템 중앙정렬 */
+.fc-event-main-frame {
+    text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.fc-event-title-container {
+    text-align: center !important;
+    width: 100% !important;
+}
+
+/* 전체 이벤트 블록 중앙정렬 */
+.fc-timegrid-event {
+    text-align: center !important;
+}
+
+/* 이벤트 하단 여백 1px로 조정 */
+.fc-timegrid-event {
+    margin-bottom: 1px !important;
+    right: 0 !important;
+    transition: opacity 0.2s ease-in-out !important;
+}
+
+.fc-timegrid-event-harness {
+    margin-bottom: 1px !important;
+    padding-right: 0 !important;
+    right: 0 !important;
+}
+
+.fc-event {
+    margin-bottom: 1px !important;
+    padding-right: 0 !important;
+}
+
+/* 이벤트가 셀 너비에서 여백 사용하도록 */
+.fc-timegrid-event-harness-inset {
+    right: 0 !important;
+    margin-bottom: 1px !important;
+}
+
+/* FullCalendar 버튼 간격 조정 */
+.fc-button-group .fc-button {
+    margin-right: 2px !important;
+}
+
+.fc-button-group .fc-button:last-child {
+    margin-right: 0 !important;
+}
+
+/* 헤더 툴바 버튼들 사이 간격 조정 */
+.fc-header-toolbar .fc-button-group .fc-button:not(:last-child) {
+    margin-right: 2px !important;
+}
+
+/* 커스텀 오늘 버튼 Outlined 스타일 */
+.fc-customToday-button,
+button.fc-customToday-button {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: #007bff !important;
+    border: 2px solid #007bff !important;
+    border-color: #007bff !important;
+    font-weight: 500 !important;
+}
+
+.fc-customToday-button:hover,
+button.fc-customToday-button:hover {
+    background-color: #007bff !important;
+    background: #007bff !important;
+    color: white !important;
+    border-color: #007bff !important;
+}
+
+/* 이벤트 컨테이너 전체 조정 */
+.fc-timegrid-col-events {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* FullCalendar 기본 이벤트 간격 조정 */
+.fc-timegrid-event-harness-inset .fc-timegrid-event {
+    margin-left: 0 !important;
+    margin-right: 1px !important;
+    left: 0 !important;
+    right: 1px !important;
+    width: calc(100% - 1px) !important;
+}
+
+/* 이벤트 기본 간격 완전 제거 */
+.fc-timegrid-event, .fc-timegrid-event-harness {
+    box-sizing: border-box !important;
+}
+
+/* 캘린더 이벤트 전체 컨테이너 수직 중앙 정렬 */
+.fc-timegrid-event-harness {
+    position: absolute !important;
+}
+
+/* 캘린더 업데이트 시 부드러운 전환 효과 */
+#calendar {
+    transition: opacity 0.3s ease-in-out !important;
+}
+
+.calendar-updating {
+    pointer-events: none !important;
+}
+
+.fc-timegrid-event {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.fc-event-main {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 2px 4px !important;
+    box-sizing: border-box !important;
+}
+
+.fc-event-main-frame {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.fc-event-time {
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    padding: 2px 0 0 0 !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+}
+
+.fc-event-title-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.fc-event-title {
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 리사이저를 하단에 고정 */
+.fc-event-resizer {
+    position: absolute !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 4px !important;
+}
+
+/* 시간 레이블 컬럼 너비 고정 */
+.fc-timegrid-axis {
+    min-width: 70px !important;
+    width: 70px !important;
+    max-width: 70px !important;
+}
+
+.fc-timegrid-slot-label {
+    min-width: 70px !important;
+    width: 70px !important;
+    max-width: 70px !important;
+}
+
+.fc-timegrid-slot-label-frame {
+    min-width: 70px !important;
+    width: 70px !important;
+}
+
+.fc-timegrid-slot-label-cushion {
+    min-width: 70px !important;
+    width: 70px !important;
+    text-align: center !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+}
+
+/* 시간 레이블 기본 스타일 */
+.fc-timegrid-slot-label {
+    /* CSS rowspan 효과 제거 - JavaScript로만 처리 */
+}
+
+/* 날짜 헤더 bold 해제 - 모든 요일 */
+.fc-col-header-cell,
+.fc-col-header-cell *,
+.fc-col-header-cell a,
+.fc-col-header-cell-cushion,
+.fc-col-header-cell-cushion *,
+th.fc-col-header-cell,
+th.fc-col-header-cell *,
+th.fc-col-header-cell a,
+th.fc-col-header-cell .fc-col-header-cell-cushion {
+    font-weight: normal !important;
+}
+
+/* 각 요일별 명시적 처리 */
+.fc-day-mon, .fc-day-mon *,
+.fc-day-tue, .fc-day-tue *,
+.fc-day-wed, .fc-day-wed *,
+.fc-day-thu, .fc-day-thu *,
+.fc-day-fri, .fc-day-fri *,
+.fc-day-sat, .fc-day-sat *,
+.fc-day-sun, .fc-day-sun * {
+      	font-weight: normal !important;
+  }
+  
+  /* FullCalendar 커스텀 버튼 스타일 */
+  .fc-copySchedule-button {
+      background-color: #007bff !important;
+      color: white !important;
+      border: 1px solid #007bff !important;
+      border-radius: 5px !important;
+      padding: 8px 16px !important;
+      margin: 0 4px !important;
+      transition: all 0.3s ease !important;
+  }
+  
+  .fc-copySchedule-button:hover {
+      background-color: #0056b3 !important;
+      border-color: #0056b3 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3) !important;
+  }
+  
+  .fc-copySchedule-button:active {
+      transform: translateY(0) !important;
+      box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2) !important;
+  }
+  
+  .fc-deleteSchedule-button {
+      background-color: #dc3545 !important;
+      color: white !important;
+      border: 1px solid #dc3545 !important;
+      border-radius: 5px !important;
+      padding: 8px 16px !important;
+      margin: 0 4px !important;
+      transition: all 0.3s ease !important;
+  }
+  
+  .fc-deleteSchedule-button:hover {
+      background-color: #c82333 !important;
+      border-color: #c82333 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3) !important;
+  }
+  
+  .fc-deleteSchedule-button:active {
+      transform: translateY(0) !important;
+      box-shadow: 0 1px 4px rgba(220, 53, 69, 0.2) !important;
+  }
+  
+  /* 스케줄 삭제 모달 스타일 */
+  #modal-delete-schedule .badge {
+      font-size: 0.875rem;
+  }
+  
+  #schedule_preview_content {
+      font-size: 0.875rem;
+  }
+  
+  #schedule_preview_content .badge-success {
+      background-color: #28a745;
+  }
+  
+  #schedule_preview_content .badge-light {
+      background-color: #f8f9fa;
+      color: #6c757d;
+  }
+  
+  /* 수업 날짜 요약 스타일 - 강력한 우선순위 적용 */
+  .schedule-summary .badge,
+  .schedule-summary span.badge,
+  .schedule-dates-container .badge,
+  .schedule-dates-container span.badge {
+      font-size: 0.8rem !important;
+      padding: 0.4rem 0.6rem !important;
+      margin: 2px !important;
+      font-weight: 500 !important;
+      border-radius: 4px !important;
+      display: inline-block !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      min-width: 60px !important;
+  }
+  
+  /* 평일 스타일 */
+  .schedule-summary .badge-success,
+  .schedule-dates-container .badge-success,
+  .schedule-summary span[style*="28a745"],
+  .schedule-dates-container span[style*="28a745"] {
+      background-color: #28a745 !important;
+      color: #ffffff !important;
+      border: none !important;
+  }
+  
+  /* 토요일 스타일 */
+  .schedule-summary .badge-warning,
+  .schedule-dates-container .badge-warning,
+  .schedule-summary span[style*="ffc107"],
+  .schedule-dates-container span[style*="ffc107"] {
+      background-color: #ffc107 !important;
+      color: #212529 !important;
+      border: none !important;
+  }
+  
+  /* 일요일 스타일 */
+  .schedule-summary .badge-danger,
+  .schedule-dates-container .badge-danger,
+  .schedule-summary span[style*="dc3545"],
+  .schedule-dates-container span[style*="dc3545"] {
+      background-color: #dc3545 !important;
+      color: #ffffff !important;
+      border: none !important;
+  }
+  
+  .schedule-dates-container {
+      scrollbar-width: thin;
+      scrollbar-color: #ced4da #f8f9fa;
+      background-color: #f8f9fa !important;
+  }
+  
+  .schedule-dates-container::-webkit-scrollbar {
+      width: 8px;
+  }
+  
+  .schedule-dates-container::-webkit-scrollbar-track {
+      background: #f8f9fa;
+      border-radius: 4px;
+  }
+  
+  .schedule-dates-container::-webkit-scrollbar-thumb {
+      background: #ced4da;
+      border-radius: 4px;
+  }
+  
+  .schedule-dates-container::-webkit-scrollbar-thumb:hover {
+      background: #adb5bd;
+  }
+  
+  /* 수업 일정 컨테이너 텍스트 가독성 향상 */
+  .schedule-summary {
+      background-color: transparent !important;
+      border: none !important;
+  }
+  
+  .schedule-summary h6 {
+      color: #495057 !important;
+      font-weight: 600 !important;
+  }
+  
+  .schedule-summary p {
+      color: #495057 !important;
+      margin-bottom: 1rem !important;
+  }
+  
+  /* 캘린더 팝업 스크롤 방지 */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+  }
+  
+  /* 캘린더 팝업 크기 제한 (가능한 경우) */
+  input[type="date"]::-webkit-datetime-edit {
+      padding: 6px 12px;
+  }
+  
+  /* 수업 날짜 배지 강제 스타일 적용 */
+  #modal-delete-schedule .schedule-dates-container span {
+      background-color: #28a745 !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-size: 0.8rem !important;
+      padding: 0.4rem 0.6rem !important;
+      font-weight: 500 !important;
+      border-radius: 4px !important;
+      display: inline-block !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      min-width: 60px !important;
+  }
+  
+  /* Bootstrap 기본 배지 스타일 오버라이드 */
+  #modal-delete-schedule .badge,
+  #modal-delete-schedule .badge-success,
+  #modal-delete-schedule .badge-warning,
+  #modal-delete-schedule .badge-danger,
+  #modal-delete-schedule .badge-sm {
+      background-color: inherit !important;
+      color: inherit !important;
+  }
+  
+  /* 주말과 평일 모든 컬럼 헤더 */
+th.fc-col-header-cell.fc-day-sat,
+th.fc-col-header-cell.fc-day-sun,
+th.fc-col-header-cell.fc-day-mon,
+th.fc-col-header-cell.fc-day-tue,
+th.fc-col-header-cell.fc-day-wed,
+th.fc-col-header-cell.fc-day-thu,
+th.fc-col-header-cell.fc-day-fri {
+    font-weight: normal !important;
+}
+
+/* 링크 요소 명시적 처리 */
+a.fc-col-header-cell-cushion {
+    font-weight: normal !important;
+}
+
+/* 캘린더 이벤트 제목(수업명, 강사명) bold 해제 - 인라인 스타일 덮어쓰기 */
+.fc-event-title,
+.fc-event-title.fc-sticky,
+.fc-event-title-container,
+.fc-event-main .fc-event-title,
+div.fc-event-title,
+div.fc-event-title.fc-sticky {
+    font-weight: 400 !important;
+}
+
+/* 이벤트 내용 전체에서 제목만 normal, 시간은 기존 스타일 유지 */
+.fc-event-main-frame .fc-event-title,
+.fc-event-main-frame div.fc-event-title {
+    font-weight: 400 !important;
+}
+
+/* 모든 이벤트 제목에서 인라인 bold 스타일 강제 덮어쓰기 */
+[style*="font-weight: bold"].fc-event-title,
+[style*="font-weight: normal"].fc-event-title {
+    font-weight: 400 !important;
+}
+
+/* 추가 강제 적용 */
+.fc-event-title[style] {
+    font-weight: 400 !important;
+}
+
+/* 목요일 전체 컬럼의 세로 라인 제거 */
+.fc-day-thu,
+.fc-day-thu * {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* 목요일 컬럼 내부 모든 요소 */
+.fc-timegrid-col.fc-day-thu,
+.fc-timegrid-col.fc-day-thu *,
+.fc-timegrid-col[data-date*="thu"],
+.fc-timegrid-col[data-date*="THU"] {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* 캘린더 전체 컬럼 경계선 제거 (필요시) */
+.fc-scrollgrid-section > * > tr > .fc-day-thu {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* 목요일 열만 세로 라인 제거 */
+.fc-day-thu::before {
+    display: none !important;
+}
+
+/* 목요일 컬럼의 모든 세로 경계선 제거 */
+.fc-timegrid-col.fc-day-thu {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.fc-timegrid-slot.fc-day-thu {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.fc-timegrid-slot-lane.fc-day-thu {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* 테이블 컬럼 너비 강제 설정 */
+.fc-timegrid-slots table colgroup col:first-child {
+    width: 70px !important;
+    min-width: 70px !important;
+}
+
+.fc-col-header table colgroup col:first-child {
+    width: 70px !important;
+    min-width: 70px !important;
+}
+
+/* 30분 단위 rowspan 스타일 */
+.fc-timegrid-slot-label.merged-30min {
+    vertical-align: middle !important;
+    border-bottom: none !important;
+}
+
+/* rowspan이 적용된 시간 레이블 프레임 */
+.fc-timegrid-slot-label.merged-30min .fc-timegrid-slot-label-frame {
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.fc-timegrid-slot-label-frame {
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 캘린더 부드러운 전환 효과 */
+#calendar {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.calendar-updating {
+    opacity: 0.85;
+}
+
+
+
+/* 캘린더 콘텐츠 부드러운 전환 */
+.fc-view-harness {
+    transition: opacity 0.05s ease-in-out;
+}
+
+/* 이벤트 컨테이너 부드러운 전환 */
+.fc-timegrid-col-events {
+    transition: opacity 0.1s ease-in-out;
+}
+
+/* 이벤트 렌더링 시 부드러운 나타남 효과 */
+.fc-event {
+    animation: fadeInEvent 0.15s ease-out;
+}
+
+.fc-event-entering {
+    animation: slideInEvent 0.15s ease-out;
+}
+
+@keyframes fadeInEvent {
+    from {
+        opacity: 0;
+        transform: translateY(-1px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInEvent {
+    from {
+        opacity: 0;
+        transform: translateY(-3px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 렌더링 최적화 */
+.fc-timegrid-event {
+    will-change: opacity, transform;
+}
+
+.fc-view-harness {
+    will-change: opacity;
+}
+
+/* 요일별 색상 설정 */
+/* 토요일 (파란색) - 텍스트만 */
+.fc-day-sat .fc-col-header-cell-cushion {
+    color: #007bff !important;
+    font-weight: bold !important;
+}
+
+/* 일요일 (빨간색) - 텍스트만 */
+.fc-day-sun .fc-col-header-cell-cushion {
+    color: #dc3545 !important;
+    font-weight: bold !important;
+}
+
+/* 오늘 날짜 배경을 옅은 그레이로 변경 */
+.fc-day-today {
+    background-color: #f8f9fa !important;
+}
+
+.fc-day-today .fc-timegrid-col-frame {
+    background-color: #f8f9fa !important;
+}
+
+/* 현재 시간 표시선 스타일 */
+.fc-timegrid-now-indicator-line {
+    border-color: rgba(255, 0, 0, 0.6) !important;
+    border-width: 1px !important;
+    z-index: 999 !important;
+    pointer-events: none !important; /* 클릭 이벤트 차단 방지 */
+    opacity: 0.6 !important;
+}
+
+.fc-timegrid-now-indicator-arrow {
+    border-color: rgba(255, 0, 0, 0.6) !important;
+    z-index: 999 !important;
+    pointer-events: none !important; /* 클릭 이벤트 차단 방지 */
+    opacity: 0.6 !important;
+}
+
+/* 현재 시간선을 더 명확하게 */
+.fc-timegrid-now-indicator-container {
+    z-index: 999 !important;
+    pointer-events: none !important; /* 클릭 이벤트 차단 방지 */
+}
+
+.fc-timegrid-now-indicator-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(to right, #ff0000, #ff6b6b);
+    z-index: 1;
+    pointer-events: none; /* 클릭 이벤트 차단 방지 */
+}
+
+/* ===== 깜빡임 방지 및 렌더링 최적화 CSS ===== */
+/* 모든 캘린더 요소의 애니메이션과 트랜지션 비활성화 (현재 시간 표시선 제외) */
+.fc *:not(.fc-now-indicator):not(.fc-now-indicator-arrow),
+.fc *:not(.fc-now-indicator):not(.fc-now-indicator-arrow)::before,
+.fc *:not(.fc-now-indicator):not(.fc-now-indicator-arrow)::after {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+}
+
+/* 이벤트 렌더링 최적화 */
+.fc-event {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    will-change: auto !important;
+}
+
+/* 이벤트 마운트 시 즉시 표시 */
+.fc-event-harness {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+}
+
+/* 캘린더 뷰 전환 시 애니메이션 비활성화 */
+.fc-view {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 타임그리드 컨테이너 최적화 */
+.fc-timegrid {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 스크롤 컨테이너 최적화 */
+.fc-scroller {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 이벤트 하네스 최적화 */
+.fc-timegrid-event-harness {
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+}
+
+/* 전체 캘린더 컨테이너 최적화 */
+#calendar {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 뷰 컨테이너 최적화 */
+.fc-view-harness {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* 이벤트 제목과 시간 최적화 */
+.fc-event-title,
+.fc-event-time {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* GPU 가속 비활성화로 깜빡임 방지 */
+.fc-event,
+.fc-event-harness,
+.fc-timegrid-event-harness {
+    transform: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
+}
+
+/* 현재 시간 표시선 스타일 보장 */
+.fc-now-indicator {
+    background: #dc3545 !important; /* 빨간색 */
+    border-color: #dc3545 !important;
+    height: 2px !important;
+    z-index: 3 !important;
+    opacity: 1 !important;
+}
+
+.fc-now-indicator-arrow {
+    border-top-color: #dc3545 !important;
+    border-bottom-color: #dc3545 !important;
+    z-index: 3 !important;
+    opacity: 1 !important;
+}
+
+/* 현재 시간 표시선은 애니메이션 허용 */
+.fc-now-indicator,
+.fc-now-indicator-arrow {
+    transition: all 0.3s ease !important;
+    animation: initial !important;
+}
+
+/* 드래그 중인 이벤트는 애니메이션 허용 */
+.fc-event.fc-event-dragging,
+.fc-event.fc-event-resizing,
+.fc-event.fc-event-mirror {
+    transition: all 0.2s ease !important;
+    animation: initial !important;
+    transform: initial !important;
+    will-change: transform !important;
+}
+
+/* 드래그 시 포인터 커서 */
+.fc-event.fc-event-draggable,
+.external-event {
+    cursor: grab !important;
+}
+
+.fc-event.fc-event-dragging,
+.external-event:active {
+    cursor: grabbing !important;
+    opacity: 0.8 !important;
+    z-index: 999 !important;
+}
+
+/* external events 드래그 스타일 */
+.external-event:hover {
+    opacity: 0.9 !important;
+    transform: scale(1.02) !important;
+    transition: all 0.2s ease !important;
+}
+
+.external-event.ui-draggable-dragging {
+    opacity: 0.7 !important;
+    transform: rotate(5deg) !important;
+    z-index: 1000 !important;
+}
+
+/* 리사이즈 핸들 스타일 */
+.fc-event-resizer {
+    background: transparent !important;
+    border: none !important;
+    height: 4px !important;
+    bottom: 0 !important;
+    cursor: ns-resize !important;
+}
+
+.fc-event-resizer:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}

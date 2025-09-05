@@ -1,0 +1,107 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# CodeIgniter 4 Framework Reference
+
+This project uses CodeIgniter 4 framework. Here are the key conventions and file locations.
+
+## Directory Structure
+
+### Application Files
+- **Controllers**: [app/Controllers/](mdc:app/Controllers/) - Handle HTTP requests
+- **Models**: [app/Models/](mdc:app/Models/) - Database interactions
+- **Views**: [app/Views/](mdc:app/Views/) - Template files
+- **Libraries**: [app/Libraries/](mdc:app/Libraries/) - Custom business logic
+- **Config**: [app/Config/](mdc:app/Config/) - Configuration files
+- **Filters**: [app/Filters/](mdc:app/Filters/) - Request/response filters
+
+### Key Configuration Files
+- **Routes**: [app/Config/Routes.php](mdc:app/Config/Routes.php) - URL routing
+- **App Config**: [app/Config/App.php](mdc:app/Config/App.php) - Application settings
+- **Database**: [app/Config/Database.php](mdc:app/Config/Database.php) - DB connection
+- **Autoload**: [app/Config/Autoload.php](mdc:app/Config/Autoload.php) - Class loading
+
+## Framework Conventions
+
+### Controllers
+- Located in `app/Controllers/`
+- Extend `BaseController` or `CodeIgniter\Controller`
+- Method names correspond to URL segments
+- Use `$this->request` for HTTP data
+- Return views with `view('path/to/view', $data)`
+
+### Models  
+- Located in `app/Models/`
+- Extend `CodeIgniter\Model`
+- Use `$this->db` for database queries
+- Follow table naming conventions
+
+### Views
+- Located in `app/Views/`
+- Use PHP template syntax
+- Access data as variables: `<?= $variable ?>`
+- Include other views: `<?= view('partials/header') ?>`
+
+### Routes
+- Defined in [app/Config/Routes.php](mdc:app/Config/Routes.php)
+- Format: `$routes->get('url', 'Controller::method')`
+- Support GET, POST, PUT, DELETE methods
+- Can use route groups and filters
+
+### Libraries
+- Custom business logic classes
+- Located in `app/Libraries/`
+- Instantiate with `new LibraryName()` or load via services
+
+## Common Patterns
+
+### Database Queries
+```php
+// In models
+$this->db->table('table_name')
+    ->where('column', $value)
+    ->get()
+    ->getResultArray();
+```
+
+### JSON Responses
+```php
+// In controllers
+return $this->response->setJSON([
+    'result' => 'true',
+    'data' => $data
+]);
+```
+
+### Loading Views
+```php
+// In controllers
+$data = ['title' => 'Page Title'];
+return view('folder/template', $data);
+```
+
+### Session Management
+```php
+// Access session
+$session = session();
+$session->set('key', $value);
+$value = $session->get('key');
+```
+
+## Project-Specific Notes
+
+### Base URL Configuration
+- Set in [app/Config/App.php](mdc:app/Config/App.php)
+- `$baseURL` should match deployment environment
+- `$indexPage = ''` for clean URLs
+
+### Custom Helper
+- Main helper: [app/Helpers/My_helper.php](mdc:app/Helpers/My_helper.php)
+- Load with `helper('my_helper');`
+
+### API Controllers
+- Handle AJAX requests
+- Return JSON responses
+- Often bypass login filters for specific endpoints

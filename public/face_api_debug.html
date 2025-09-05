@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face API Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        video { width: 320px; height: 240px; background: #000; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Face API Debug Tool</h1>
+    
+    <!-- 1. Health Check -->
+    <div class="section">
+        <h3>1. Health Check Test</h3>
+        <button onclick="testHealthCheck()">Health Check 테스트</button>
+        <div id="healthResult" class="result"></div>
+    </div>
+    
+    <!-- 2. Camera Test -->
+    <div class="section">
+        <h3>2. Camera Test</h3>
+        <button onclick="startCamera()">카메라 시작</button>
+        <button onclick="captureImage()">이미지 캡처</button>
+        <button onclick="stopCamera()">카메라 중지</button>
+        <br>
+        <video id="video" autoplay></video>
+        <canvas id="canvas" width="320" height="240"></canvas>
+        <div id="cameraResult" class="result"></div>
+    </div>
+    
+    <!-- 3. Face Recognition Test -->
+    <div class="section">
+        <h3>3. Face Recognition Test</h3>
+        <button onclick="testFaceRecognition()">얼굴 인식 테스트</button>
+        <div id="faceResult" class="result"></div>
+    </div>
+
+    <script>
+        let stream = null;
+        let video = null;
+        let canvas = null;
+        let ctx = null;
+
+        function log(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            console.log(message);
+        }
+
+        // 1. Health Check Test
+        async function testHealthCheck() {
+            try {
+                const response = await fetch('/api/face/health');
+                const result = await response.json();
+                log('healthResult', `✅ Health Check 성공!\n${JSON.stringify(result, null, 2)}`);
+            } catch (error) {
+                log('healthResult', `❌ Health Check 실패: ${error.message}`, true);
+            }
+        }
+
+        // 2. Camera Test
+        async function startCamera() {
+            try {
+                video = document.getElementById('video');
+                canvas = document.getElementById('canvas');
+                ctx = canvas.getContext('2d');
+                
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: 640,
+                        height: 480
+                    } 
+                });
+                
+                video.srcObject = stream;
+                log('cameraResult', '✅ 카메라 시작 성공!');
+            } catch (error) {
+                log('cameraResult', `❌ 카메라 시작 실패: ${error.message}`, true);
+            }
+        }
+
+        function captureImage() {
+            if (!video || !stream) {
+                log('cameraResult', '❌ 먼저 카메라를 시작해주세요.', true);
+                return;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            const base64Data = imageDataUrl.split(',')[1];
+            
+            log('cameraResult', `✅ 이미지 캡처 성공!\nBase64 길이: ${base64Data.length} 문자`);
+            
+            // 캡처된 이미지를 전역 변수에 저장
+            window.capturedImage = base64Data;
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+                log('cameraResult', '✅ 카메라 중지됨');
+            }
+        }
+
+        // 3. Face Recognition Test
+        async function testFaceRecognition() {
+            if (!window.capturedImage) {
+                log('faceResult', '❌ 먼저 이미지를 캡처해주세요.', true);
+                return;
+            }
+
+            try {
+                // FormData 준비
+                const formData = new FormData();
+                formData.append('image_base64', window.capturedImage);
+                
+                // Blob으로도 추가
+                const response = await fetch(`data:image/jpeg;base64,${window.capturedImage}`);
+                const blob = await response.blob();
+                formData.append('face_image', blob, 'test_face.jpg');
+
+                log('faceResult', '🔄 얼굴 인식 요청 중...');
+
+                // API 호출
+                const apiResponse = await fetch('/api/face/recognize', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('API Response Status:', apiResponse.status);
+                console.log('API Response Headers:', [...apiResponse.headers.entries()]);
+
+                const result = await apiResponse.text(); // JSON이 아닐 수도 있으니 text로 먼저 받기
+                console.log('Raw API Response:', result);
+
+                try {
+                    const jsonResult = JSON.parse(result);
+                    log('faceResult', `✅ 얼굴 인식 완료!\n${JSON.stringify(jsonResult, null, 2)}`);
+                } catch (parseError) {
+                    log('faceResult', `❌ JSON 파싱 실패!\nRaw Response: ${result}`, true);
+                }
+
+            } catch (error) {
+                log('faceResult', `❌ 얼굴 인식 실패: ${error.message}`, true);
+                console.error('Face Recognition Error:', error);
+            }
+        }
+
+        // 페이지 로드시 자동으로 Health Check 실행
+        window.addEventListener('load', function() {
+            testHealthCheck();
+        });
+    </script>
+</body>
+</html> 

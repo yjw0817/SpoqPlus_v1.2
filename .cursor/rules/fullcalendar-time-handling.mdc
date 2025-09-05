@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# FullCalendar 시간 처리 규칙 (Time Handling Rule)
+
+이 프로젝트에서 FullCalendar를 통한 수업(이벤트) 생성/수정 시 시간대 꼬임, 9시간 차이, 잘못된 종료시간 등 심각한 버그를 방지하기 위한 **불변의 원칙**입니다.
+
+## 적용 대상 파일
+- [public/dist/js/amajs/ama_calendar.js](mdc:public/dist/js/amajs/ama_calendar.js)
+- [app/Libraries/Ama_calendar.php](mdc:app/Libraries/Ama_calendar.php)
+
+---
+
+## 1. 프론트엔드(자바스크립트)
+- FullCalendar에서 드래그/생성된 이벤트의 `eventObj.start`는 **로컬(한국) 시간**임을 신뢰한다.
+- **시간대 변환, toISOString(), setTimezone 등은 절대 사용하지 않는다.**
+- 백엔드로 넘길 때는 `split('T')`로 날짜/시간만 분리해서 넘긴다.
+- 예시:
+```js
+// [중요] FullCalendar 시간 처리 규칙
+// eventObj.start는 항상 로컬(한국) 시간임을 신뢰해야 함
+// 시간대 변환, toISOString() 등은 절대 사용하지 말 것!
+// split('T')로 날짜/시간만 분리해서 백엔드로 넘길 것
+var startTime = eventObj.start ? new Date(eventObj.start) : new Date();
+var startStr = startTime.getFullYear() + '-' + 
+               String(startTime.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(startTime.getDate()).padStart(2, '0') + 'T' + 
+               String(startTime.getHours()).padStart(2, '0') + ':' + 
+               String(startTime.getMinutes()).padStart(2, '0') + ':00';
+// 백엔드로 startStr 전달
+```
+
+---
+
+## 2. 백엔드(PHP)
+- 프론트에서 받은 시간 문자열은 `split('T')`로 분리해서 날짜/시간만 사용한다.
+- **종료 시간은** `strtotime($start_time . ' + GX_CLASS_MIN minutes')`로 계산한다.
+- **DateTime, setTimezone, 시간대 변환 등은 절대 사용하지 않는다.**
+- 항상 **로컬(한국) 시간 기준**으로만 처리한다.
+- 예시:
+```php
+// [중요] FullCalendar 시간 처리 규칙
+// 프론트에서 받은 시간은 split('T')로 분리해서 날짜/시간만 사용
+// DateTime, setTimezone 등 시간대 변환은 절대 사용하지 말 것!
+// 항상 로컬(한국) 시간 기준으로만 처리
+$split_start = explode('T', $postVar['start']);
+$start_date = $split_start[0];
+$start_time = substr($split_start[1], 0, 8);
+$end_time = date('H:i:s', strtotime($start_time . ' +' . $gx_class_min . ' minutes'));
+```
+
+---
+
+## 3. 금지 사항
+- 시간대 변환, UTC 변환, toISOString(), setTimezone 등 **모든 시간대 관련 함수/메서드 사용 금지**
+- DateTime 객체를 통한 시간대 조작 금지
+- 항상 split('T')로 분리해서 로컬 시간 기준으로만 처리
+
+---
+
+## 4. 이 규칙을 어기면?
+- 드래그한 위치의 시간이 DB에 잘못 들어감 (예: 11:30 → 02:30, 20:30 등)
+- 종료 시간이 엉뚱하게 계산됨
+- 사용자 경험 및 데이터 신뢰성에 심각한 문제 발생
+
+---
+
+## 5. 코드리뷰/테스트 체크리스트
+- [ ] FullCalendar 시간 처리 규칙을 지켰는가?
+- [ ] 시간대 변환, toISOString(), setTimezone 등 금지
+- [ ] split('T')로 날짜/시간만 분리해서 사용
+- [ ] 종료 시간은 GX_CLASS_MIN만큼만 더해서 계산
+
+---
+
+> 이 규칙은 반드시 지켜야 하며, 위반 시 코드리뷰/배포/테스트에서 반드시 걸러집니다.
+

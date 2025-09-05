@@ -1,0 +1,178 @@
+# SPOQ Plus 알림 규칙
+
+groups:
+  - name: spoqplus_critical
+    interval: 30s
+    rules:
+      # 서비스 다운
+      - alert: ServiceDown
+        expr: up{job=~"spoqplus-app|face-recognition|mysql|redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "서비스 다운: {{ $labels.job }} on {{ $labels.instance }}"
+          description: "{{ $labels.job }} 서비스가 2분 이상 다운되었습니다."
+
+      # 데이터베이스 연결 실패
+      - alert: DatabaseConnectionFailure
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "MySQL 데이터베이스 연결 실패"
+          description: "MySQL 데이터베이스에 연결할 수 없습니다."
+
+      # 디스크 공간 부족
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "디스크 공간 부족: {{ $labels.instance }}"
+          description: "디스크 사용률이 90%를 초과했습니다. 남은 공간: {{ $value | humanize1024 }}B"
+
+  - name: spoqplus_warning
+    interval: 60s
+    rules:
+      # 높은 CPU 사용률
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "높은 CPU 사용률: {{ $labels.job }}"
+          description: "CPU 사용률이 10분 이상 80%를 초과했습니다. 현재: {{ $value | humanize }}%"
+
+      # 높은 메모리 사용률
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "높은 메모리 사용률: {{ $labels.instance }}"
+          description: "메모리 사용률이 85%를 초과했습니다. 현재: {{ $value | humanize }}%"
+
+      # 느린 응답 시간
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: application
+        annotations:
+          summary: "느린 응답 시간"
+          description: "95% 응답 시간이 500ms를 초과했습니다. 현재: {{ $value }}s"
+
+      # Face Recognition 실패율
+      - alert: HighFaceRecognitionFailureRate
+        expr: rate(face_recognition_failures_total[5m]) / rate(face_recognition_attempts_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "높은 얼굴 인식 실패율"
+          description: "얼굴 인식 실패율이 10%를 초과했습니다. 현재: {{ $value | humanizePercentage }}"
+
+      # 데이터베이스 느린 쿼리
+      - alert: DatabaseSlowQueries
+        expr: rate(mysql_global_status_slow_queries[5m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "데이터베이스 느린 쿼리 증가"
+          description: "분당 5개 이상의 느린 쿼리가 감지되었습니다."
+
+      # Redis 메모리 사용량
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Redis 메모리 사용량 높음"
+          description: "Redis 메모리 사용량이 80%를 초과했습니다."
+
+  - name: spoqplus_business
+    interval: 60s
+    rules:
+      # 로그인 실패율
+      - alert: HighLoginFailureRate
+        expr: rate(spoqplus_login_failures_total[10m]) / rate(spoqplus_login_attempts_total[10m]) > 0.2
+        for: 15m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "높은 로그인 실패율"
+          description: "로그인 실패율이 20%를 초과했습니다. 보안 공격 가능성을 확인하세요."
+
+      # 활성 사용자 급감
+      - alert: ActiveUsersDrop
+        expr: (spoqplus_active_users - spoqplus_active_users offset 1h) / spoqplus_active_users offset 1h < -0.5
+        for: 30m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "활성 사용자 수 급감"
+          description: "활성 사용자 수가 1시간 전 대비 50% 이상 감소했습니다."
+
+      # 결제 실패
+      - alert: PaymentProcessingFailures
+        expr: rate(spoqplus_payment_failures_total[5m]) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          team: payment
+        annotations:
+          summary: "결제 처리 실패"
+          description: "결제 실패율이 5%를 초과했습니다. 즉시 확인이 필요합니다."
+
+  - name: spoqplus_security
+    interval: 30s
+    rules:
+      # 비정상적인 접근 시도
+      - alert: SuspiciousAccessPattern
+        expr: rate(spoqplus_failed_auth_attempts_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "비정상적인 접근 시도 감지"
+          description: "5분간 10회 이상의 인증 실패가 감지되었습니다. IP: {{ $labels.source_ip }}"
+
+      # SQL Injection 시도
+      - alert: PotentialSQLInjection
+        expr: increase(spoqplus_sql_injection_attempts_total[5m]) > 0
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "SQL Injection 시도 감지"
+          description: "SQL Injection 패턴이 감지되었습니다. 즉시 확인이 필요합니다."
+
+      # 비정상적인 데이터 접근
+      - alert: UnusualDataAccess
+        expr: rate(spoqplus_bulk_data_access_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "비정상적인 대량 데이터 접근"
+          description: "짧은 시간에 대량의 데이터 접근이 감지되었습니다."

@@ -1,0 +1,75 @@
+<div id="sideMenu" class="menu">
+		<div class="menu-item has-sub">    
+			<a href="javascript:;" class="menu-link" data-id="AM100100">        
+				<div class="menu-icon">
+					<i class="ion-ios-contact bg-gradient-cyan-blue"></i>
+				</div>        
+				<div class="menu-text">어드민 계정관리</div>        
+				<div class="menu-caret"></div>    
+			</a>    
+			<div class="menu-submenu">
+				<div class="menu-item">    
+					<a href="/adminmain/bc_appct_manage?m1=1&amp;m2=1" class="menu-link" data-id="AM100110">        
+						<div class="menu-text">어드민 계정등록</div>    
+					</a>
+				</div>
+			</div>
+		</div>
+		<div class="menu-item has-sub">    
+			<a href="javascript:;" class="menu-link" data-id="CM100100">        
+				<div class="menu-icon">
+					<i class="ion-ios-people bg-gradient-purple-indigo"></i>
+				</div>        
+				<div class="menu-text">고객사 관리</div>        
+				<div class="menu-caret"></div>    
+			</a>    
+			<div class="menu-submenu">
+				<div class="menu-item">    
+					<a href="/adminmain/sadmin_list?m1=2&amp;m2=1" class="menu-link" data-id="CM100110">        
+						<div class="menu-text">고객사 등록관리</div>    
+					</a>
+				</div>
+				<div class="menu-item">    
+					<a href="/adminmain/set_menu_comp?m1=2&amp;m2=2" class="menu-link" data-id="CM100120">        
+						<div class="menu-text">회사별 메뉴 설정</div>    
+					</a>
+				</div>
+				<div class="menu-item">    
+					<a href="/adminmain/set_menu_bcoff?m1=2&amp;m2=3" class="menu-link" data-id="CM100130">        
+						<div class="menu-text">지점별 메뉴 설정</div>    
+					</a>
+				</div>
+				<div class="menu-item">    
+					<a href="/adminmain/all_mem_manage?m1=2&amp;m2=4" class="menu-link" data-id="CM100140">        
+						<div class="menu-text">회원 강제 탈퇴</div>    
+					</a>
+				</div>
+			</div>
+		</div>
+		<div class="menu-item has-sub active">    
+			<a href="javascript:;" class="menu-link" data-id="SM100100">        
+				<div class="menu-icon">
+					<i class="ion-gear-b bg-gradient-yellow-red"></i>
+				</div>        
+				<div class="menu-text">프로그램 설정</div>        
+				<div class="menu-caret"></div>    
+			</a>    
+			<div class="menu-submenu">
+				<div class="menu-item active">    
+					<a href="/adminmain/set_menu?m1=3&amp;m2=1" class="menu-link" data-id="SM100110">        
+						<div class="menu-text">메뉴(프로그램)등록관리</div>    
+					</a>
+				</div>
+				<div class="menu-item">    
+					<a href="?m1=3&amp;m2=2" class="menu-link" data-id="SM100120">        
+						<div class="menu-text">기본 권한관리</div>    
+					</a>
+				</div>
+				<div class="menu-item">    
+					<a href="?m1=3&amp;m2=3" class="menu-link" data-id="SM100130">        
+						<div class="menu-text">기본 권한 메뉴등록</div>    
+					</a>
+				</div>
+			</div>
+		</div>		
+	</div>
