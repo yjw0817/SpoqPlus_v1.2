@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker4 통합 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Locker4 Vue + CodeIgniter 통합 테스트</h1>
+    
+    <div class="status info">
+        <h3>📋 통합 상태 확인</h3>
+        <p>이 페이지에서 Vue 앱과 CodeIgniter의 통합 상태를 확인할 수 있습니다.</p>
+    </div>
+
+    <div class="test-item">
+        <h3>1. 빌드된 파일 확인</h3>
+        <div id="files-test">파일 확인 중...</div>
+        <button onclick="testFiles()">파일 다시 확인</button>
+    </div>
+
+    <div class="test-item">
+        <h3>2. Vue 앱 로딩 테스트</h3>
+        <div id="vue-test">Vue 앱 확인 중...</div>
+        <button onclick="testVueApp()">Vue 앱 테스트</button>
+    </div>
+
+    <div class="test-item">
+        <h3>3. CodeIgniter 연결 테스트</h3>
+        <div id="api-test">API 연결 확인 중...</div>
+        <button onclick="testApiConnection()">API 연결 테스트</button>
+    </div>
+
+    <div class="test-item">
+        <h3>4. 통합 환경 정보</h3>
+        <div id="environment-info">환경 정보 로딩 중...</div>
+        <button onclick="showEnvironmentInfo()">환경 정보 새로고침</button>
+    </div>
+
+    <div class="test-item">
+        <h3>5. 추천 액션</h3>
+        <div id="recommendations">
+            <button onclick="openVueApp()">🎯 Vue 앱 열기 (프로덕션)</button>
+            <button onclick="openVueAppDev()">🔧 Vue 앱 열기 (개발 모드)</button>
+            <button onclick="openCodeIgniterAdmin()">⚙️ CodeIgniter 관리자</button>
+        </div>
+    </div>
+
+    <script>
+        // 파일 존재 확인
+        function testFiles() {
+            const files = [
+                '/spoq-admin/assets/locker4/js/index.js',
+                '/spoq-admin/assets/locker4/css/index.css',
+                '/spoq-admin/assets/locker4/index.html'
+            ];
+            
+            const testDiv = document.getElementById('files-test');
+            testDiv.innerHTML = '<p>파일 확인 중...</p>';
+            
+            let results = [];
+            let completed = 0;
+            
+            files.forEach(file => {
+                fetch(file, { method: 'HEAD' })
+                    .then(response => {
+                        results.push(`✅ ${file} - 존재함 (${response.status})`);
+                    })
+                    .catch(error => {
+                        results.push(`❌ ${file} - 없음 또는 오류`);
+                    })
+                    .finally(() => {
+                        completed++;
+                        if (completed === files.length) {
+                            testDiv.innerHTML = `
+                                <div class="status ${results.some(r => r.includes('❌')) ? 'error' : 'success'}">
+                                    <pre>${results.join('\n')}</pre>
+                                </div>
+                            `;
+                        }
+                    });
+            });
+        }
+
+        // Vue 앱 테스트
+        function testVueApp() {
+            const testDiv = document.getElementById('vue-test');
+            
+            try {
+                // Vue 관련 스크립트 로딩 테스트
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.src = '/spoq-admin/assets/locker4/js/index.js';
+                
+                script.onload = () => {
+                    testDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Vue 앱 스크립트가 성공적으로 로드되었습니다!
+                            <br>💡 실제 Vue 앱 실행은 /spoq-admin/locker/setting 에서 확인하세요.
+                        </div>
+                    `;
+                };
+                
+                script.onerror = () => {
+                    testDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Vue 앱 스크립트 로딩에 실패했습니다.
+                            <br>빌드가 제대로 되었는지 확인하세요.
+                        </div>
+                    `;
+                };
+                
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                testDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Vue 앱 테스트 중 오류: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // API 연결 테스트
+        function testApiConnection() {
+            const testDiv = document.getElementById('api-test');
+            testDiv.innerHTML = '<p>API 연결 테스트 중...</p>';
+            
+            // CodeIgniter 기본 페이지 테스트
+            fetch('/spoq-admin/locker')
+                .then(response => {
+                    if (response.ok) {
+                        testDiv.innerHTML = `
+                            <div class="status success">
+                                ✅ CodeIgniter 라우팅이 정상 작동합니다! (상태: ${response.status})
+                                <br>💡 락커 관리 컨트롤러에 접근할 수 있습니다.
+                            </div>
+                        `;
+                    } else {
+                        testDiv.innerHTML = `
+                            <div class="status error">
+                                ⚠️ CodeIgniter 라우팅 응답: ${response.status}
+                                <br>설정을 확인해주세요.
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    testDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ API 연결 실패: ${error.message}
+                            <br>CodeIgniter 서버가 실행 중인지 확인하세요.
+                        </div>
+                    `;
+                });
+        }
+
+        // 환경 정보 표시
+        function showEnvironmentInfo() {
+            const infoDiv = document.getElementById('environment-info');
+            const info = `
+현재 URL: ${window.location.href}
+브라우저: ${navigator.userAgent}
+화면 해상도: ${screen.width}x${screen.height}
+현재 시간: ${new Date().toLocaleString()}
+
+통합 정보:
+- Vue 프로젝트: D:\\Projects\\Locker4\\frontend
+- CodeIgniter 프로젝트: D:\\Projects\\html\\SpoqPlus_Color_Admin_Except_Mobile_claude2
+- 빌드 출력: public/assets/locker4/
+- 개발 서버 포트: 5175
+            `;
+            
+            infoDiv.innerHTML = `
+                <div class="status info">
+                    <pre>${info}</pre>
+                </div>
+            `;
+        }
+
+        // 액션 버튼들
+        function openVueApp() {
+            window.open('/spoq-admin/locker/setting', '_blank');
+        }
+        
+        function openVueAppDev() {
+            window.open('/spoq-admin/locker/setting?dev=1', '_blank');
+        }
+        
+        function openCodeIgniterAdmin() {
+            window.open('/spoq-admin/', '_blank');
+        }
+
+        // 페이지 로드 시 자동 테스트
+        document.addEventListener('DOMContentLoaded', function() {
+            testFiles();
+            showEnvironmentInfo();
+            
+            // 2초 후 자동으로 다른 테스트들도 실행
+            setTimeout(() => {
+                testApiConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

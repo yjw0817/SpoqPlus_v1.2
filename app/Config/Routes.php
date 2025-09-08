@@ -104,6 +104,7 @@ $routes->post('tcron/run_cron', 'Tcron::run_cron');
 // 락커 관리 라우트
 $routes->get('locker', 'Locker::index');
 $routes->get('locker/setting', 'Locker::setting');        // 락커 배치 설정
+$routes->get('locker/manage', 'Locker::manage');          // 락커 관리
 $routes->get('locker/placement', 'Locker::placement');    // 락커 배치 Vue 앱
 $routes->post('locker/upload_floor', 'Locker::upload_floor');
 $routes->post('locker/save_zone', 'Locker::save_zone');
@@ -113,6 +114,29 @@ $routes->post('locker/update_locker_numbers', 'Locker::update_locker_numbers');
 $routes->get('locker/get_zones', 'Locker::get_zones');
 $routes->get('locker/get_groups', 'Locker::get_groups');
 $routes->get('locker/get_lockers', 'Locker::get_lockers');
+
+// 락커 관리 API 라우트 (Vue 앱용)
+$routes->group('api/locker', function($routes) {
+    $routes->get('floors', 'Locker::ajax_get_floors');
+    $routes->post('floors', 'Locker::ajax_upload_floor');
+    $routes->delete('floors/(:num)', 'Locker::ajax_delete_floor/$1');
+    
+    $routes->get('zones', 'Locker::ajax_get_zones');
+    $routes->post('zones', 'Locker::ajax_add_zone');
+    $routes->put('zones/(:num)', 'Locker::ajax_update_zone/$1');
+    $routes->delete('zones/(:num)', 'Locker::ajax_delete_zone/$1');
+    
+    $routes->get('groups', 'Locker::get_groups');
+    $routes->post('groups', 'Locker::ajax_add_group');
+    $routes->put('groups/(:num)', 'Locker::ajax_update_group/$1');
+    $routes->delete('groups/(:num)', 'Locker::ajax_delete_group/$1');
+    
+    $routes->get('lockers', 'Locker::get_lockers');
+    $routes->post('lockers', 'Locker::ajax_create_locker');
+    $routes->put('lockers/(:num)', 'Locker::ajax_update_locker/$1');
+    $routes->delete('lockers/(:num)', 'Locker::ajax_delete_locker/$1');
+    $routes->post('lockers/batch', 'Locker::ajax_save_locker_numbers');
+});
 
 $routes->get('/admin/generate-test-floor-plan', 'Admin::generateTestFloorPlan');
 $routes->get('/admin/getDatabaseStats', 'Admin::getDatabaseStats');

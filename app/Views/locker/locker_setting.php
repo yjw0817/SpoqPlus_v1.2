@@ -12,12 +12,15 @@ helper('form');
     
     <div class="panel-body" style="min-height: 800px;">
         <!-- Vue App Container -->
-        <div id="app"></div>
+        <div id="locker4-app"></div>
     </div>
 </div>
 
 <!-- PHP to Vue Data Bridge - MUST be before Vue app loads -->
 <script>
+// 새로운 앱 타입 시스템
+window.LockerAppType = 'locker-placement';
+
 window.LockerConfig = {
     // API Configuration
     apiUrl: '<?= base_url('api/locker') ?>',
@@ -29,8 +32,8 @@ window.LockerConfig = {
     csrfHash: '<?= csrf_hash() ?>',
     
     // Company and Branch Info
-    companyCode: '<?= isset($companyCode) ? $companyCode : '001' ?>',
-    officeCode: '<?= isset($officeCode) ? $officeCode : '001' ?>',
+    companyCode: '<?= isset($comp_cd) ? $comp_cd : '001' ?>',
+    officeCode: '<?= isset($bcoff_cd) ? $bcoff_cd : '001' ?>',
     
     // User Session Data
     user: {
@@ -53,22 +56,20 @@ window.LockerConfig = {
         enableApi: true,
         enableRealtime: false,
         enableDebugMode: <?= ENVIRONMENT === 'development' ? 'true' : 'false' ?>
-    },
-    
-    // Initial Route for Vue Router
-    initialRoute: '/locker-placement'
+    }
 };
 
 // Debug info in development
 <?php if(ENVIRONMENT === 'development'): ?>
+console.log('[Locker4] App Type:', window.LockerAppType);
 console.log('[Locker4] Configuration loaded:', window.LockerConfig);
 <?php endif; ?>
 </script>
 
 <?php if(ENVIRONMENT === 'development' && isset($_GET['dev'])): ?>
 <!-- Development Mode: Using Vite Dev Server -->
-<script type="module" src="http://localhost:5175/assets/locker4/@vite/client"></script>
-<script type="module" src="http://localhost:5175/assets/locker4/src/main.ts"></script>
+<script type="module" src="http://localhost:5175/@vite/client"></script>
+<script type="module" src="http://localhost:5175/src/main.ts"></script>
 <?php else: ?>
 <!-- Production Mode: Using Built Assets -->
 <link rel="stylesheet" crossorigin href="<?= base_url('assets/locker4/css/index.css') ?>">
@@ -85,7 +86,7 @@ console.log('[Locker4 Debug] Assets URL:', '<?= base_url('assets/locker4/') ?>')
 // Check if Vue app mounts after page load
 window.addEventListener('DOMContentLoaded', () => {
     console.log('[Locker4 Debug] DOM loaded');
-    const appElement = document.getElementById('app');
+    const appElement = document.getElementById('locker4-app');
     console.log('[Locker4 Debug] App element found:', appElement);
     
     // Check after a delay

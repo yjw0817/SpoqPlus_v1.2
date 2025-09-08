@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker4 Vue 앱 직접 테스트</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-placement { background: #28a745; color: white; }
+        .btn-management { background: #17a2b8; color: white; }
+        .btn-reload { background: #ffc107; color: black; }
+        .status {
+            padding: 15px 20px;
+            margin: 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        #locker4-app {
+            min-height: 600px;
+            padding: 20px;
+            background: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .vue-debug {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: black;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow: auto;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="header">
+            <h1>🚀 Locker4 Vue 앱 직접 테스트</h1>
+            <p>인증 없이 Vue 앱 통합을 테스트할 수 있습니다.</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-placement" onclick="loadPlacement()">📦 배치 관리 (Placement)</button>
+            <button class="btn-management" onclick="loadManagement()">📊 현황 관리 (Management)</button>
+            <button class="btn-reload" onclick="reloadApp()">🔄 앱 재로드</button>
+        </div>
+        
+        <div id="status" class="status info">
+            준비 중... 앱 타입을 선택해주세요.
+        </div>
+        
+        <!-- Vue App Container -->
+        <div id="locker4-app" class="loading">
+            <h3>Vue 앱 로딩 중...</h3>
+            <p>잠시만 기다려주세요.</p>
+        </div>
+    </div>
+
+    <!-- Debug Console -->
+    <div class="vue-debug" id="debug-console">
+        <strong>Debug Console</strong><br>
+        <div id="debug-log">대기 중...</div>
+    </div>
+
+    <script>
+        let currentAppType = null;
+        
+        function debugLog(message) {
+            const debugDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML = `${timestamp}: ${message}<br>` + debugDiv.innerHTML;
+            console.log(`[Locker4 Debug] ${message}`);
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            debugLog(`Status: ${message}`);
+        }
+        
+        function setupLockerConfig(appType) {
+            // PHP에서 설정할 데이터를 JavaScript로 시뮬레이션
+            window.LockerAppType = appType;
+            window.LockerConfig = {
+                // API Configuration
+                apiUrl: '/api/locker',
+                baseUrl: window.location.origin + '/',
+                
+                // CSRF Protection (테스트용 더미 데이터)
+                csrfToken: 'test_token',
+                csrfHeader: 'X-CSRF-TOKEN',
+                csrfHash: 'test_hash',
+                
+                // Company and Branch Info
+                companyCode: '001',
+                officeCode: '001',
+                
+                // User Session Data (테스트용)
+                user: {
+                    id: 'test_user',
+                    name: 'Test User',
+                    role: 'admin',
+                    isLoggedIn: true
+                },
+                
+                // Application Settings
+                settings: {
+                    dateFormat: 'YYYY-MM-DD',
+                    timeFormat: 'HH:mm:ss',
+                    locale: 'ko-KR',
+                    currency: 'KRW'
+                },
+                
+                // Feature Flags
+                features: {
+                    enableApi: true,
+                    enableRealtime: false,
+                    enableDebugMode: true
+                }
+            };
+            
+            debugLog(`App Type: ${appType}`);
+            debugLog(`Config loaded: ${JSON.stringify(window.LockerConfig.user)}`);
+        }
+        
+        function loadVueApp() {
+            debugLog('Vue 앱 로딩 시작...');
+            
+            // 기존 스크립트 제거
+            const existingScripts = document.querySelectorAll('script[src*="locker4"]');
+            existingScripts.forEach(script => script.remove());
+            
+            const existingStyles = document.querySelectorAll('link[href*="locker4"]');
+            existingStyles.forEach(style => style.remove());
+            
+            // CSS 로드
+            const cssLink = document.createElement('link');
+            cssLink.rel = 'stylesheet';
+            cssLink.href = '/assets/locker4/css/index.css';
+            cssLink.onload = () => debugLog('CSS 로드 완료');
+            cssLink.onerror = () => debugLog('CSS 로드 실패');
+            document.head.appendChild(cssLink);
+            
+            // Vue 앱 스크립트 로드
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = '/assets/locker4/js/index.js';
+            
+            script.onload = () => {
+                debugLog('Vue 스크립트 로드 완료');
+                updateStatus(`${currentAppType} 앱이 로드되었습니다.`, 'success');
+                
+                // Vue 앱 마운트 확인
+                setTimeout(() => {
+                    const appElement = document.getElementById('locker4-app');
+                    if (appElement && appElement.children.length > 1) {
+                        debugLog('Vue 앱 마운트 성공!');
+                        updateStatus(`${currentAppType} 앱이 성공적으로 실행되었습니다.`, 'success');
+                    } else {
+                        debugLog('Vue 앱 마운트 실패 - 앱 컨테이너가 비어있음');
+                        updateStatus('Vue 앱 마운트에 실패했습니다.', 'error');
+                    }
+                }, 2000);
+            };
+            
+            script.onerror = () => {
+                debugLog('Vue 스크립트 로드 실패');
+                updateStatus('Vue 스크립트 로드에 실패했습니다.', 'error');
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function loadPlacement() {
+            currentAppType = 'locker-placement';
+            updateStatus('배치 관리 앱 로딩 중...', 'info');
+            
+            // 앱 컨테이너 초기화
+            document.getElementById('locker4-app').innerHTML = '<div class="loading"><h3>배치 관리 앱 로딩 중...</h3></div>';
+            
+            setupLockerConfig('locker-placement');
+            loadVueApp();
+        }
+        
+        function loadManagement() {
+            currentAppType = 'locker-management';
+            updateStatus('현황 관리 앱 로딩 중...', 'info');
+            
+            // 앱 컨테이너 초기화
+            document.getElementById('locker4-app').innerHTML = '<div class="loading"><h3>현황 관리 앱 로딩 중...</h3></div>';
+            
+            setupLockerConfig('locker-management');
+            loadVueApp();
+        }
+        
+        function reloadApp() {
+            if (!currentAppType) {
+                updateStatus('먼저 앱 타입을 선택해주세요.', 'error');
+                return;
+            }
+            
+            debugLog('앱 재로드...');
+            
+            if (currentAppType === 'locker-placement') {
+                loadPlacement();
+            } else {
+                loadManagement();
+            }
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            debugLog('페이지 로드 완료');
+            updateStatus('준비 완료. 위 버튼으로 앱을 선택해주세요.', 'info');
+        });
+        
+        // 전역 에러 처리
+        window.addEventListener('error', (event) => {
+            debugLog(`Error: ${event.error?.message || event.message}`);
+        });
+        
+        // Vue 앱에서 발생하는 로그 캐치
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            if (args[0] && args[0].includes && args[0].includes('[Locker4]')) {
+                debugLog(args.join(' '));
+            }
+            originalConsoleLog.apply(console, args);
+        };
+    </script>
+</body>
+</html>
