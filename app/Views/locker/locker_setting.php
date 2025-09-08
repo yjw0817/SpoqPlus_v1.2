@@ -6,14 +6,8 @@ helper('form');
 <h1 class="page-header"><?php echo $title ?></h1>
 
 <div class="panel panel-inverse">
-    <div class="panel-heading">
-        <h4 class="panel-title"><?php echo $title ?></h4>
-    </div>
-    
-    <div class="panel-body" style="min-height: 800px;">
         <!-- Vue App Container -->
-        <div id="locker4-app"></div>
-    </div>
+    <div id="locker4-app"></div>
 </div>
 
 <!-- PHP to Vue Data Bridge - MUST be before Vue app loads -->
