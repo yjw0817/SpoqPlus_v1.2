@@ -67,15 +67,8 @@ console.log('[Locker4] Configuration loaded:', window.LockerConfig);
 
 <?php if(ENVIRONMENT === 'development' && isset($_GET['dev'])): ?>
 <!-- Development Mode: Using Vite Dev Server -->
-<script type="module">
-import RefreshRuntime from 'http://localhost:5175/@react-refresh'
-RefreshRuntime.injectIntoGlobalHook(window)
-window.$RefreshReg$ = () => {}
-window.$RefreshSig$ = () => (type) => type
-window.__vite_plugin_react_preamble_installed__ = true
-</script>
-<script type="module" src="http://localhost:5175/@vite/client"></script>
-<script type="module" src="http://localhost:5175/src/main.ts"></script>
+<script type="module" src="http://localhost:5175/assets/locker4/@vite/client"></script>
+<script type="module" src="http://localhost:5175/assets/locker4/src/main.ts"></script>
 <?php else: ?>
 <!-- Production Mode: Using Built Assets -->
 <link rel="stylesheet" crossorigin href="<?= base_url('assets/locker4/css/index.css') ?>">

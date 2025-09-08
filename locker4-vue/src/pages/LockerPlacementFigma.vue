@@ -4995,7 +4995,19 @@ const positionLockersInFrontView = (lockerSequence) => {
   lockerSequence.forEach((locker, index) => {
     // In front view, all lockers face forward (no rotation)
     // Apply same scale as getLockerDimensions for consistency
-    const scaledHeight = (locker.actualHeight || locker.height || 60) * LOCKER_VISUAL_SCALE
+    
+    // Get the locker type to determine actual height
+    const lockerType = locker.typeId ? lockerTypes.value.find(t => t.id === locker.typeId) : null
+    
+    // Use type height if available, otherwise use locker's height
+    const actualHeight = lockerType?.height || locker.height || 60
+    
+    // Update the locker's actualHeight property if not set
+    if (!locker.actualHeight && lockerType?.height) {
+      locker.actualHeight = lockerType.height
+    }
+    
+    const scaledHeight = actualHeight * LOCKER_VISUAL_SCALE
     const scaledWidth = (locker.width || 40) * LOCKER_VISUAL_SCALE
     
     // CRITICAL: Check height for L3 and L4

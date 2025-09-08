@@ -67,15 +67,9 @@ export class LockerApiService {
   constructor() {
     this.useCodeIgniter = isCodeIgniterEnvironment()
     
-    // Use CodeIgniter API if available, otherwise fall back to Node.js API
-    if (this.useCodeIgniter) {
-      // Use the base URL from CodeIgniter config
-      const config = getLockerConfig()
-      this.baseUrl = config ? config.baseUrl + '/api' : '/api'
-    } else {
-      // Development mode - use Node.js API
-      this.baseUrl = 'http://localhost:3333/api'
-    }
+    // Always use Node.js API for now since CodeIgniter API is not implemented yet
+    // TODO: When CodeIgniter API is ready, switch based on environment
+    this.baseUrl = 'http://localhost:3333/api'
     
     this.headers = {
       'Content-Type': 'application/json'
@@ -83,6 +77,7 @@ export class LockerApiService {
     
     console.log('[LockerApi] Using API:', this.baseUrl)
     console.log('[LockerApi] CodeIgniter environment:', this.useCodeIgniter)
+    console.log('[LockerApi] Note: Using Node.js backend even in CodeIgniter environment')
     
     // Keep CodeIgniter detection for future use
     if (this.useCodeIgniter) {
