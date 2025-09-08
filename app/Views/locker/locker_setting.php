@@ -65,9 +65,22 @@ console.log('[Locker4] Configuration loaded:', window.LockerConfig);
 <?php endif; ?>
 </script>
 
-<!-- Vue App Assets - Only load index.js as the main entry point -->
+<?php if(ENVIRONMENT === 'development' && isset($_GET['dev'])): ?>
+<!-- Development Mode: Using Vite Dev Server -->
+<script type="module">
+import RefreshRuntime from 'http://localhost:5175/@react-refresh'
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>
+<script type="module" src="http://localhost:5175/@vite/client"></script>
+<script type="module" src="http://localhost:5175/src/main.ts"></script>
+<?php else: ?>
+<!-- Production Mode: Using Built Assets -->
 <link rel="stylesheet" crossorigin href="<?= base_url('assets/locker4/css/index.css') ?>">
 <script type="module" crossorigin src="<?= base_url('assets/locker4/js/index.js') ?>"></script>
+<?php endif; ?>
 
 <!-- Debug Info for Development -->
 <?php if(ENVIRONMENT === 'development'): ?>
