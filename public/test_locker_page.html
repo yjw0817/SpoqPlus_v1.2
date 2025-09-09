@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Locker Data</title>
+</head>
+<body>
+    <h1>Testing Locker Data Loading</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Simulate the data that would be loaded from PHP
+        window.PreloadedData = {
+            lockerTypes: [],
+            lockerZones: [],
+            lockers: []
+        };
+        
+        // Load the data via AJAX
+        async function testDataLoading() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Test API endpoints
+                const baseUrl = '/locker';
+                
+                // Test 1: Get locker types
+                const typesResponse = await fetch(`${baseUrl}/ajax_get_locker_types`);
+                const types = await typesResponse.json();
+                output.innerHTML += `<p>Locker Types: ${JSON.stringify(types)}</p>`;
+                
+                // Test 2: Get zones
+                const zonesResponse = await fetch(`${baseUrl}/ajax_get_zones`);
+                const zones = await zonesResponse.json();
+                output.innerHTML += `<p>Zones: ${JSON.stringify(zones)}</p>`;
+                
+                // Test 3: Get lockers
+                const lockersResponse = await fetch(`${baseUrl}/ajax_get_lockers?zone_id=zone-1`);
+                const lockers = await lockersResponse.json();
+                output.innerHTML += `<p>Lockers: ${JSON.stringify(lockers)}</p>`;
+                
+            } catch (error) {
+                output.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test on page load
+        testDataLoading();
+    </script>
+</body>
+</html>

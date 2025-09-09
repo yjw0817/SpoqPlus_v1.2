@@ -94,15 +94,24 @@
                 renderLockerTypes();
             }
             
-            if (window.PreloadedData.lockers) {
-                state.lockers = convertLockerData(window.PreloadedData.lockers);
-                renderLockers();
-            }
-            
-            // 첫 번째 구역을 기본 선택
+            // 첫 번째 구역을 기본 선택 (락커 로드 전에 구역 선택)
             if (state.zones.length > 0) {
                 console.log('[Enhanced] Auto-selecting first zone:', state.zones[0]);
-                switchZone(state.zones[0].id);
+                state.selectedZone = state.zones[0].id; // 먼저 선택된 구역 설정
+            }
+            
+            if (window.PreloadedData.lockers) {
+                console.log('[Enhanced] Raw locker data from server:', window.PreloadedData.lockers);
+                state.lockers = convertLockerData(window.PreloadedData.lockers);
+                console.log('[Enhanced] Converted locker data:', state.lockers);
+                console.log('[Enhanced] Current selected zone:', state.selectedZone);
+                
+                // 구역이 선택된 후에 switchZone 호출하여 렌더링
+                if (state.selectedZone) {
+                    switchZone(state.selectedZone);
+                }
+            } else {
+                console.log('[Enhanced] No locker data in PreloadedData');
             }
         } else {
             // 서버 데이터가 없으면 기존 방식으로 API 호출
@@ -332,9 +341,13 @@
         console.log('[Enhanced] Lockers for current zone:', currentLockers.length);
         
         currentLockers.forEach(locker => {
+            console.log('[Enhanced] Creating SVG for locker:', locker);
             const lockerElement = createLockerSVG(locker);
             if (lockerElement) {
+                console.log('[Enhanced] Locker SVG created successfully');
                 lockersGroup.appendChild(lockerElement);
+            } else {
+                console.warn('[Enhanced] Failed to create SVG for locker:', locker);
             }
         });
         
