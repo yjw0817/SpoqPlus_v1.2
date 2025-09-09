@@ -28,7 +28,7 @@ class Locker extends MainTchrController
     /**
      * 락커 (배정)관리
      */
-    public function manage()
+    public function locker_management()
     {
         // ===========================================================================
         // 선언부
@@ -48,13 +48,13 @@ class Locker extends MainTchrController
         // ===========================================================================
         $data['view']['floors'] = $floors;
         
-        $this->viewPage('/locker/locker_manage', $data);
+        $this->viewPage('/locker/locker_management', $data);
     }
 
     /**
      * 락커구역별 배치
      */
-    public function setting()
+    public function locker_placement()
     {
         // ===========================================================================
         // 선언부
@@ -73,7 +73,7 @@ class Locker extends MainTchrController
         // ===========================================================================
         //$data['view']['floors'] = $floors;
         
-        $this->viewPage('/locker/locker_setting', $data);
+        $this->viewPage('/locker/locker_placement', $data);
     }
 
     /**
