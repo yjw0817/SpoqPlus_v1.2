@@ -258,4 +258,84 @@ class LockerModel extends Model
         $builder->where('locker_sno', $locker_sno);
         return $builder->get()->getRowArray();
     }
+
+    // ============================================
+    // Locker4 호환 메서드들
+    // ============================================
+    
+    /**
+     * 락커 타입 목록 조회 (Locker4 호환)
+     */
+    public function getLockerTypes($comp_cd = '001', $bcoff_cd = '001')
+    {
+        $builder = $this->db->table('lockr_types');
+        $builder->where('COMP_CD', $comp_cd);
+        $builder->where('BCOFF_CD', $bcoff_cd);
+        
+        $result = $builder->get();
+        $types = $result->getResultArray();
+        
+        // API 형식으로 변환
+        $formattedTypes = [];
+        foreach ($types as $type) {
+            $formattedTypes[] = [
+                'LOCKR_TYPE_CD' => $type['LOCKR_TYPE_CD'],
+                'LOCKR_TYPE_NM' => $type['LOCKR_TYPE_NM'],
+                'WIDTH' => intval($type['WIDTH']),
+                'HEIGHT' => intval($type['HEIGHT']),
+                'DEPTH' => intval($type['DEPTH']),
+                'COLOR' => $type['COLOR']
+            ];
+        }
+        
+        return $formattedTypes;
+    }
+
+    /**
+     * 락커 구역 목록 조회 (Locker4 호환)
+     */
+    public function getLockerZones($comp_cd = '001', $bcoff_cd = '001')
+    {
+        $builder = $this->db->table('lockr_area');
+        $builder->where('COMP_CD', $comp_cd);
+        $builder->where('BCOFF_CD', $bcoff_cd);
+        
+        $result = $builder->get();
+        $zones = $result->getResultArray();
+        
+        // API 형식으로 변환
+        $formattedZones = [];
+        foreach ($zones as $zone) {
+            $formattedZones[] = [
+                'LOCKR_KND_CD' => $zone['LOCKR_KND_CD'],
+                'LOCKR_KND_NM' => $zone['LOCKR_KND_NM'],
+                'X' => intval($zone['X'] ?? 0),
+                'Y' => intval($zone['Y'] ?? 0),
+                'WIDTH' => intval($zone['WIDTH'] ?? 800),
+                'HEIGHT' => intval($zone['HEIGHT'] ?? 600),
+                'COLOR' => $zone['COLOR'] ?? '#e5e7eb'
+            ];
+        }
+        
+        return $formattedZones;
+    }
+
+    /**
+     * 락커 목록 조회 (Locker4 호환)
+     */
+    public function getLockers($comp_cd = '001', $bcoff_cd = '001', $zone_id = null)
+    {
+        $builder = $this->db->table('lockrs');
+        $builder->where('COMP_CD', $comp_cd);
+        $builder->where('BCOFF_CD', $bcoff_cd);
+        
+        if ($zone_id) {
+            $builder->where('LOCKR_KND', $zone_id);
+        }
+        
+        $builder->orderBy('LOCKR_CD', 'ASC');
+        
+        $result = $builder->get();
+        return $result->getResultArray();
+    }
 } 
