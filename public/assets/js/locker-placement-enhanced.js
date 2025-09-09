@@ -382,13 +382,15 @@
                     ry="${2 * scale}"
                 />
                 <line
-                    x1="5"
-                    y1="5"
-                    x2="${width - 5}"
-                    y2="5"
+                    x1="10"
+                    y1="${height - 4}"
+                    x2="${width - 10}"
+                    y2="${height - 4}"
                     stroke="${type.color || '#1e40af'}"
-                    stroke-width="2"
-                    opacity="0.6"
+                    stroke-width="4"
+                    opacity="0.9"
+                    stroke-linecap="square"
+                    shape-rendering="crispEdges"
                 />
             </svg>
         `;
@@ -427,25 +429,30 @@
         g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`);
         g.style.cursor = 'move';
         
-        // 락커 사각형
+        // 락커 사각형 (Locker4 스타일)
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('width', width * scale);
-        rect.setAttribute('height', (state.currentViewMode === 'floor' ? depth : height) * scale);
+        rect.setAttribute('x', state.currentViewMode === 'front' ? 0 : 1);
+        rect.setAttribute('y', state.currentViewMode === 'front' ? 0 : 1);
+        rect.setAttribute('width', state.currentViewMode === 'front' ? width * scale : (width * scale) - 2);
+        rect.setAttribute('height', state.currentViewMode === 'front' ? height * scale : ((state.currentViewMode === 'floor' ? depth : height) * scale) - 2);
         rect.setAttribute('fill', type.color ? `${type.color}20` : '#FFFFFF');
         rect.setAttribute('stroke', state.selectedLockerIds.has(locker.id) ? '#0768AE' : '#9ca3af');
         rect.setAttribute('stroke-width', state.selectedLockerIds.has(locker.id) ? '2' : '1');
         rect.setAttribute('rx', 2 * scale);
+        rect.setAttribute('shape-rendering', 'crispEdges');
         
-        // 락커 문짝 표시선 (평면 모드에서만)
+        // 락커 문짝 표시선 (평면 모드에서만 - 하단에 표시)
         if (state.currentViewMode === 'floor') {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', 5);
-            line.setAttribute('y1', 5);
-            line.setAttribute('x2', (width * scale) - 5);
-            line.setAttribute('y2', 5);
+            line.setAttribute('x1', 10);
+            line.setAttribute('y1', (depth * scale) - 4);
+            line.setAttribute('x2', (width * scale) - 10);
+            line.setAttribute('y2', (depth * scale) - 4);
             line.setAttribute('stroke', type.color || '#1e40af');
-            line.setAttribute('stroke-width', '2');
-            line.setAttribute('opacity', '0.6');
+            line.setAttribute('stroke-width', '4');
+            line.setAttribute('opacity', '0.9');
+            line.setAttribute('stroke-linecap', 'square');
+            line.setAttribute('shape-rendering', 'crispEdges');
             g.appendChild(line);
         }
         
@@ -459,6 +466,30 @@
         text.setAttribute('font-size', '14');
         text.setAttribute('font-weight', 'bold');
         text.textContent = locker.number || (locker.id ? String(locker.id).split('-')[1] : '') || locker.id;
+        
+        // 선택 상태 하이라이트 (점선 애니메이션)
+        if (state.selectedLockerIds.has(locker.id)) {
+            const selectionRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            selectionRect.setAttribute('x', -2);
+            selectionRect.setAttribute('y', -2);
+            selectionRect.setAttribute('width', (width * scale) + 4);
+            selectionRect.setAttribute('height', ((state.currentViewMode === 'floor' ? depth : height) * scale) + 4);
+            selectionRect.setAttribute('fill', 'none');
+            selectionRect.setAttribute('stroke', '#0768AE');
+            selectionRect.setAttribute('stroke-width', '2');
+            selectionRect.setAttribute('stroke-dasharray', '5,5');
+            selectionRect.setAttribute('rx', 4 * scale);
+            
+            // 애니메이션 추가
+            const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            animate.setAttribute('attributeName', 'stroke-dashoffset');
+            animate.setAttribute('values', '0;10');
+            animate.setAttribute('dur', '0.5s');
+            animate.setAttribute('repeatCount', 'indefinite');
+            selectionRect.appendChild(animate);
+            
+            g.appendChild(selectionRect);
+        }
         
         g.appendChild(rect);
         g.appendChild(text);
