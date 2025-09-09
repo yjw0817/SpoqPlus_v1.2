@@ -1,0 +1,481 @@
+/* 기존 Locker4 Vue 프로젝트의 스타일 그대로 가져옴 */
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0768AE;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Main content */
+.main-content {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.locker-placement {
+  width: 100%;
+  height: calc(100% - 60px);
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+  overflow: hidden;
+}
+
+/* 컨테이너 */
+.container-locker {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  min-width: 1200px;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+/* 사이드바 */
+.locker-sidebar {
+  width: 280px !important;
+  height: 770px !important;
+  min-height: 600px !important;
+  background: white !important;
+  border: 1px solid black !important;
+  border-radius: 5px !important;
+  margin: 0 16px 16px 0 !important;
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  flex-shrink: 0 !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  align-self: stretch !important;
+}
+
+.locker-sidebar-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* 락커 타입 목록 */
+.locker-types {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.locker-type-item-wrapper {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.locker-type-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.locker-type-item:hover {
+  background: #f5f5f5;
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.locker-type-item.active {
+  background: #e8f4ff;
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.type-visual {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.type-info {
+  flex: 1;
+}
+
+.type-name {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.type-size {
+  display: block;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 삭제 버튼 */
+.delete-type-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.locker-type-item-wrapper:hover .delete-type-button {
+  opacity: 1;
+}
+
+.delete-type-button:hover {
+  background: #ff4444;
+}
+
+/* 캔버스 영역 */
+.canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: 0;
+  padding-bottom: 0;
+  min-width: 900px;
+  height: calc(100% - 16px);
+  overflow: auto;
+}
+
+/* 구역 탭 */
+.zone-tabs {
+  display: flex;
+  padding-bottom: 12px;
+  border-bottom: 1px solid black;
+  margin-bottom: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tabs-left {
+  display: flex;
+  gap: 8px;
+}
+
+.zone-tab {
+  padding: 8px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px 4px 0 0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: #666;
+}
+
+.zone-tab:hover {
+  background: #f5f5f5;
+}
+
+.zone-tab.active {
+  background: #4A90E2;
+  color: white;
+  border-color: #4A90E2;
+}
+
+/* 캔버스 래퍼 */
+.canvas-wrapper {
+  width: 100%;
+  height: calc(100% - 60px);
+  min-height: 500px;
+  background: white;
+  overflow: auto;
+  border: 1px solid #e5e5e5;
+  position: relative;
+  border-radius: 4px;
+  display: block;
+  padding: 0;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.canvas {
+  background: white;
+  cursor: crosshair;
+  display: block;
+  transform-origin: 0 0;
+}
+
+.canvas-background {
+  fill: url(#grid);
+}
+
+/* 락커 SVG 스타일 */
+.locker-rect {
+  cursor: move;
+  transition: stroke-width 0.2s;
+}
+
+.locker-rect:hover {
+  stroke-width: 3;
+}
+
+.locker-rect.selected {
+  stroke-width: 3;
+  stroke-dasharray: 5,5;
+}
+
+.locker-front-line {
+  pointer-events: none;
+}
+
+.locker-text {
+  pointer-events: none;
+  user-select: none;
+  font-size: 14px;
+  font-weight: bold;
+  fill: #333;
+}
+
+/* 선택 박스 */
+.selection-box {
+  fill: rgba(74, 144, 226, 0.1);
+  stroke: #4A90E2;
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+}
+
+/* 드래그 가이드라인 */
+.guide-line {
+  stroke: #FF0000;
+  stroke-width: 1;
+  stroke-dasharray: 3,3;
+  opacity: 0.7;
+}
+
+/* 회전 핸들 */
+.rotation-handle {
+  fill: #4A90E2;
+  stroke: white;
+  stroke-width: 2;
+  cursor: grab;
+}
+
+.rotation-handle:active {
+  cursor: grabbing;
+}
+
+/* 툴바 스타일 */
+.toolbar {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.toolbar-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: #f5f5f5;
+}
+
+.toolbar-btn.active {
+  background: #4A90E2;
+  color: white;
+}
+
+/* 컨텍스트 메뉴 */
+.context-menu {
+  position: absolute;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  z-index: 1000;
+  min-width: 150px;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: #e5e5e5;
+  margin: 4px 0;
+}
+
+/* 뷰 모드 스위처 */
+.view-mode-switcher {
+  display: flex;
+  gap: 8px;
+}
+
+.view-mode-btn {
+  padding: 6px 12px;
+  border: 1px solid #e5e5e5;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.view-mode-btn:hover {
+  background: #f5f5f5;
+}
+
+.view-mode-btn.active {
+  background: #4A90E2;
+  color: white;
+  border-color: #4A90E2;
+}
+
+/* 번호 할당 UI */
+.number-assign-popup {
+  position: absolute;
+  background: white;
+  border: 2px solid #4A90E2;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1001;
+}
+
+.number-assign-input {
+  width: 100px;
+  padding: 4px 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 애니메이션 */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse-animation {
+  animation: pulse 0.3s ease-in-out;
+}
+
+/* 반응형 처리 */
+@media (max-width: 1400px) {
+  .locker-sidebar {
+    width: 250px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .container-locker {
+    min-width: 1000px;
+  }
+  .locker-sidebar {
+    width: 220px !important;
+  }
+}
+
+/* 스크롤바 스타일 */
+.locker-sidebar::-webkit-scrollbar,
+.canvas-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.locker-sidebar::-webkit-scrollbar-track,
+.canvas-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.locker-sidebar::-webkit-scrollbar-thumb,
+.canvas-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.locker-sidebar::-webkit-scrollbar-thumb:hover,
+.canvas-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

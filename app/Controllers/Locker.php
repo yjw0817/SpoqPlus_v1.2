@@ -63,15 +63,14 @@ class Locker extends MainTchrController
         
         $modelLocker = new \App\Models\LockerModel();
         
-        // Vue 앱에 전달할 데이터 설정
+        // 데이터 설정
         $data['title'] = '락커 배치 관리';
-        $data['comp_cd'] = $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
-        $data['bcoff_cd'] = $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+        $data['companyCode'] = $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
+        $data['officeCode'] = $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
         
         // ===========================================================================
         // 화면 처리
         // ===========================================================================
-        //$data['view']['floors'] = $floors;
         
         $this->viewPage('/locker/locker_placement', $data);
     }
@@ -1175,6 +1174,216 @@ class Locker extends MainTchrController
             
         } catch (\Exception $e) {
             log_message('error', '[createIndividualLockers] Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 락커 타입 목록 조회 (Locker4 호환)
+     */
+    public function ajax_get_locker_types()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            // 락커 타입 데이터 (하드코딩 - 실제로는 DB에서 가져와야 함)
+            $types = [
+                ['id' => '1', 'name' => '소형', 'width' => 40, 'depth' => 40, 'height' => 40, 'color' => '#3b82f6'],
+                ['id' => '2', 'name' => '중형', 'width' => 50, 'depth' => 50, 'height' => 60, 'color' => '#10b981'],
+                ['id' => '3', 'name' => '대형', 'width' => 60, 'depth' => 60, 'height' => 80, 'color' => '#f59e0b'],
+                ['id' => '4', 'name' => '특대형', 'width' => 70, 'depth' => 70, 'height' => 100, 'color' => '#8b5cf6']
+            ];
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'types' => $types
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_get_locker_types] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 목록 조회 (Locker4 API 호환)
+     */
+    public function ajax_get_all_lockers()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $comp_cd = $this->request->getGet('comp_cd') ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+            $zone_id = $this->request->getGet('zone_id');
+            
+            // Node.js API로 프록시 요청 (선택적)
+            // $nodeApiUrl = 'http://localhost:3333/api/lockrs?COMP_CD=' . $comp_cd . '&BCOFF_CD=' . $bcoff_cd;
+            
+            // 임시 더미 데이터
+            $lockers = [];
+            
+            // DB에서 락커 데이터 조회 (실제 구현 필요)
+            // $db = \Config\Database::connect();
+            // $query = $db->table('lockrs')
+            //             ->where('COMP_CD', $comp_cd)
+            //             ->where('BCOFF_CD', $bcoff_cd);
+            // if ($zone_id) {
+            //     $query->where('LOCKR_KND', $zone_id);
+            // }
+            // $lockers = $query->get()->getResultArray();
+            
+            // 임시 더미 데이터 생성
+            if ($zone_id == 1) {
+                $lockers = [
+                    [
+                        'LOCKR_CD' => 1,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd,
+                        'LOCKR_KND' => '1',
+                        'LOCKR_TYPE_CD' => '1',
+                        'X' => 100,
+                        'Y' => 100,
+                        'LOCKR_LABEL' => 'A-001',
+                        'ROTATION' => 0,
+                        'LOCKR_STAT' => '00'
+                    ],
+                    [
+                        'LOCKR_CD' => 2,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd,
+                        'LOCKR_KND' => '1',
+                        'LOCKR_TYPE_CD' => '2',
+                        'X' => 200,
+                        'Y' => 100,
+                        'LOCKR_LABEL' => 'A-002',
+                        'ROTATION' => 0,
+                        'LOCKR_STAT' => '01'
+                    ],
+                    [
+                        'LOCKR_CD' => 3,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd,
+                        'LOCKR_KND' => '1',
+                        'LOCKR_TYPE_CD' => '1',
+                        'X' => 300,
+                        'Y' => 100,
+                        'LOCKR_LABEL' => 'A-003',
+                        'ROTATION' => 90,
+                        'LOCKR_STAT' => '00'
+                    ]
+                ];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'lockers' => $lockers,
+                'count' => count($lockers)
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_get_all_lockers] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 저장/업데이트 (Locker4 API 호환)
+     */
+    public function ajax_save_locker()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $data = $this->request->getJSON(true);
+            $lockr_cd = $data['LOCKR_CD'] ?? null;
+            
+            // 필수 필드 설정
+            $lockerData = [
+                'COMP_CD' => $data['COMP_CD'] ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
+                'BCOFF_CD' => $data['BCOFF_CD'] ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
+                'LOCKR_KND' => $data['LOCKR_KND'] ?? $data['zoneId'] ?? '',
+                'LOCKR_TYPE_CD' => $data['LOCKR_TYPE_CD'] ?? $data['typeId'] ?? '1',
+                'X' => $data['X'] ?? 0,
+                'Y' => $data['Y'] ?? 0,
+                'LOCKR_LABEL' => $data['LOCKR_LABEL'] ?? '',
+                'ROTATION' => $data['ROTATION'] ?? 0,
+                'LOCKR_STAT' => $data['LOCKR_STAT'] ?? '00',
+                'UPDATE_DT' => date('Y-m-d H:i:s'),
+                'UPDATE_BY' => $this->SpoQCahce->getCacheVar('user_id') ?? 'system'
+            ];
+            
+            // DB 저장 로직 (실제 구현 필요)
+            // $db = \Config\Database::connect();
+            // if ($lockr_cd) {
+            //     // 업데이트
+            //     $db->table('lockrs')->where('LOCKR_CD', $lockr_cd)->update($lockerData);
+            // } else {
+            //     // 새로 삽입
+            //     $db->table('lockrs')->insert($lockerData);
+            //     $lockr_cd = $db->insertID();
+            // }
+            
+            // 임시 응답
+            if (!$lockr_cd) {
+                $lockr_cd = rand(1000, 9999); // 임시 ID
+            }
+            
+            $lockerData['LOCKR_CD'] = $lockr_cd;
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'locker' => $lockerData,
+                'message' => '락커가 저장되었습니다.'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_save_locker] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 삭제 (Locker4 API 호환)
+     */
+    public function ajax_delete_locker()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $lockr_cd = $this->request->getPost('lockr_cd');
+            
+            if (!$lockr_cd) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '락커 ID가 필요합니다.']);
+            }
+            
+            // DB 삭제 로직 (실제 구현 필요)
+            // $db = \Config\Database::connect();
+            // $db->table('lockrs')->where('LOCKR_CD', $lockr_cd)->delete();
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => '락커가 삭제되었습니다.'
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_delete_locker] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
         }
     }
 
