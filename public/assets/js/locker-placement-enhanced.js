@@ -337,7 +337,16 @@
         lockersGroup.id = 'lockersGroup';
         
         // 현재 구역의 락커만 렌더링 (state.selectedZone은 ID 문자열)
-        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
+        console.log('[Enhanced] Filtering lockers - selectedZone:', state.selectedZone);
+        console.log('[Enhanced] Sample locker zoneId:', state.lockers[0]?.zoneId);
+        const currentLockers = state.lockers.filter(l => {
+            // 디버깅: 각 락커의 zoneId 확인
+            if (l.zoneId === state.selectedZone) {
+                console.log('[Enhanced] Matched locker:', l.id, 'zone:', l.zoneId);
+                return true;
+            }
+            return false;
+        });
         console.log('[Enhanced] Lockers for current zone:', currentLockers.length);
         
         currentLockers.forEach(locker => {

@@ -6,8 +6,8 @@ helper('form');
 <h1 class="page-header"><?php echo $title ?></h1>
 
 <div class="row">
-    <!-- 좌측 사이드바 - 락커 선택창 -->
-    <div class="col-xl-3 col-lg-4">
+    <!-- 좌측 사이드바 - 락커 선택창 (너비 1/3 축소: col-xl-3 → col-xl-2) -->
+    <div class="col-xl-2 col-lg-3">
         <div class="panel panel-inverse">
             <div class="panel-heading">
                 <h4 class="panel-title">락커 선택창</h4>
@@ -45,8 +45,8 @@ helper('form');
         </div>
     </div>
     
-    <!-- 우측 메인 영역 - 캔버스 -->
-    <div class="col-xl-9 col-lg-8">
+    <!-- 우측 메인 영역 - 캔버스 (너비 확장: col-xl-9 → col-xl-10) -->
+    <div class="col-xl-10 col-lg-9">
         <div class="panel panel-inverse">
             <div class="panel-heading">
                 <h4 class="panel-title">락커 배치도</h4>
