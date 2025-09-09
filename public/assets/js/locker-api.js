@@ -2,10 +2,8 @@
 (function() {
     'use strict';
 
-    // API 설정
+    // API 설정 - PHP API만 사용
     const API_CONFIG = {
-        useNodeApi: false, // Node.js API 사용 여부
-        nodeApiUrl: 'http://localhost:3333/api',
         phpApiUrl: window.LockerConfig ? window.LockerConfig.baseUrl + '/api' : '/api'
     };
 
@@ -13,7 +11,7 @@
     window.LockerAPI = {
         // 기본 API URL 가져오기
         getApiUrl: function() {
-            return API_CONFIG.useNodeApi ? API_CONFIG.nodeApiUrl : API_CONFIG.phpApiUrl;
+            return API_CONFIG.phpApiUrl;
         },
 
         // CSRF 토큰 헤더 가져오기
@@ -94,7 +92,7 @@
             }
         },
 
-        // 락커 목록 조회 (Locker4 호환)
+        // 락커 목록 조회 (PHP Controller 사용)
         getLockers: async function(compCd, bcoffCd, zoneId) {
             try {
                 const params = new URLSearchParams();
@@ -102,9 +100,7 @@
                 if (bcoffCd) params.append('bcoff_cd', bcoffCd);
                 if (zoneId) params.append('zone_id', zoneId);
 
-                const url = API_CONFIG.useNodeApi 
-                    ? `${this.getApiUrl()}/lockrs?${params}`
-                    : `${this.getApiUrl()}/locker/lockrs?${params}`;
+                const url = `${this.getApiUrl()}/locker/lockers?${params}`;
 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -136,13 +132,11 @@
         saveLocker: async function(locker) {
             try {
                 const dbLocker = this.convertAppToDb(locker);
-                const isNew = !locker.LOCKR_CD;
+                const isNew = !locker.lockrCd;
                 
-                const url = API_CONFIG.useNodeApi
-                    ? isNew 
-                        ? `${this.getApiUrl()}/lockrs`
-                        : `${this.getApiUrl()}/lockrs/${locker.LOCKR_CD}`
-                    : `${this.getApiUrl()}/locker/lockrs`;
+                const url = isNew 
+                    ? `${this.getApiUrl()}/locker/lockers`
+                    : `${this.getApiUrl()}/locker/lockers/${locker.lockrCd}`;
 
                 const response = await fetch(url, {
                     method: isNew ? 'POST' : 'PUT',
@@ -171,9 +165,7 @@
         // 락커 삭제
         deleteLocker: async function(lockrCd) {
             try {
-                const url = API_CONFIG.useNodeApi
-                    ? `${this.getApiUrl()}/lockrs/${lockrCd}`
-                    : `${this.getApiUrl()}/locker/lockrs/${lockrCd}`;
+                const url = `${this.getApiUrl()}/locker/lockers/${lockrCd}`;
 
                 const response = await fetch(url, {
                     method: 'DELETE',
