@@ -674,57 +674,6 @@ class Locker extends MainTchrController
         }
     }
 
-    // 구역 추가
-    public function ajax_add_zone()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            // 도면 정보 가져오기
-            $floor_sno = $this->request->getPost('floor_sno');
-            $floor_info = $this->floorModel->find($floor_sno);
-            
-            if (empty($floor_info)) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '도면 정보를 찾을 수 없습니다.']);
-            }
-
-            $data = [
-                'floor_sno' => $floor_sno,
-                'comp_cd' => $floor_info['comp_cd'],
-                'bcoff_cd' => $floor_info['bcoff_cd'],
-                'zone_nm' => $this->request->getPost('zone_nm'),
-                'zone_gendr' => $this->request->getPost('zone_gendr'),
-                'zone_coords' => $this->request->getPost('zone_coords'),
-                'use_yn' => 'Y',  // 기본값으로 활성화 상태 설정
-                'cre_id' => $this->SpoQCahce->getCacheVar('user_id'),
-                'cre_datetm' => new \CodeIgniter\I18n\Time('now'),
-                'mod_id' => $this->SpoQCahce->getCacheVar('user_id'),
-                'mod_datetm' => new \CodeIgniter\I18n\Time('now')
-            ];
-
-            if ($zone_sno = $this->zoneModel->insert($data)) {
-                return $this->response->setJSON([
-                    'status' => 'success',
-                    'zone_sno' => $zone_sno,
-                    'message' => '구역이 추가되었습니다.'
-                ]);
-            } else {
-                log_message('error', '[ajax_add_zone] Insert failed: ' . print_r($this->zoneModel->errors(), true));
-                return $this->response->setJSON([
-                    'status' => 'error',
-                    'message' => '구역 추가에 실패했습니다.'
-                ]);
-            }
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_add_zone] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
 
     // 구역 상세 페이지
     public function zone_detail($zone_sno)
@@ -1162,45 +1111,6 @@ class Locker extends MainTchrController
         }
     }
 
-    /**
-     * 락커 목록 조회
-     */
-    public function ajax_get_lockers()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $group_sno = $this->request->getGet('group_sno');
-            
-            if (empty($group_sno)) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '그룹 번호가 필요합니다.']);
-            }
-
-            // 락커 목록 조회
-            $lockers = $this->db->table('tb_locker')
-                               ->where('group_sno', $group_sno)
-                               ->where('use_yn', 'Y')
-                               ->orderBy('locker_floor', 'DESC')
-                               ->orderBy('locker_row', 'ASC')
-                               ->orderBy('locker_col', 'ASC')
-                               ->get()
-                               ->getResultArray();
-
-            return $this->response->setJSON([
-                'status' => 'success',
-                'lockers' => $lockers
-            ]);
-
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_get_lockers] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
 
     /**
      * 락커 상태 업데이트
@@ -1460,65 +1370,6 @@ class Locker extends MainTchrController
         }
     }
 
-    /**
-     * 락커 저장/업데이트 (Locker4 API 호환)
-     */
-    public function ajax_save_locker()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $data = $this->request->getJSON(true);
-            $lockr_cd = $data['LOCKR_CD'] ?? null;
-            
-            // 필수 필드 설정
-            $lockerData = [
-                'COMP_CD' => $data['COMP_CD'] ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
-                'BCOFF_CD' => $data['BCOFF_CD'] ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
-                'LOCKR_KND' => $data['LOCKR_KND'] ?? $data['zoneId'] ?? '',
-                'LOCKR_TYPE_CD' => $data['LOCKR_TYPE_CD'] ?? $data['typeId'] ?? '1',
-                'X' => $data['X'] ?? 0,
-                'Y' => $data['Y'] ?? 0,
-                'LOCKR_LABEL' => $data['LOCKR_LABEL'] ?? '',
-                'ROTATION' => $data['ROTATION'] ?? 0,
-                'LOCKR_STAT' => $data['LOCKR_STAT'] ?? '00',
-                'UPDATE_DT' => date('Y-m-d H:i:s'),
-                'UPDATE_BY' => $this->SpoQCahce->getCacheVar('user_id') ?? 'system'
-            ];
-            
-            // DB 저장 로직 (실제 구현 필요)
-            // $db = \Config\Database::connect();
-            // if ($lockr_cd) {
-            //     // 업데이트
-            //     $db->table('lockrs')->where('LOCKR_CD', $lockr_cd)->update($lockerData);
-            // } else {
-            //     // 새로 삽입
-            //     $db->table('lockrs')->insert($lockerData);
-            //     $lockr_cd = $db->insertID();
-            // }
-            
-            // 임시 응답
-            if (!$lockr_cd) {
-                $lockr_cd = rand(1000, 9999); // 임시 ID
-            }
-            
-            $lockerData['LOCKR_CD'] = $lockr_cd;
-            
-            return $this->response->setJSON([
-                'status' => 'success',
-                'locker' => $lockerData,
-                'message' => '락커가 저장되었습니다.'
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_save_locker] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
 
     /**
      * 락커 구역 목록 조회 (Locker4 호환)
