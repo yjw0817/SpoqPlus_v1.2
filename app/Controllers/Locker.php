@@ -1326,6 +1326,7 @@ class Locker extends MainTchrController
         }
     }
 
+
     /**
      * 락커 타입 목록 조회 (Locker4 호환)
      */
@@ -1336,17 +1337,33 @@ class Locker extends MainTchrController
                 return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
             }
 
-            // 락커 타입 데이터 (하드코딩 - 실제로는 DB에서 가져와야 함)
-            $types = [
-                ['id' => '1', 'name' => '소형', 'width' => 40, 'depth' => 40, 'height' => 40, 'color' => '#3b82f6'],
-                ['id' => '2', 'name' => '중형', 'width' => 50, 'depth' => 50, 'height' => 60, 'color' => '#10b981'],
-                ['id' => '3', 'name' => '대형', 'width' => 60, 'depth' => 60, 'height' => 80, 'color' => '#f59e0b'],
-                ['id' => '4', 'name' => '특대형', 'width' => 70, 'depth' => 70, 'height' => 100, 'color' => '#8b5cf6']
-            ];
+            $comp_cd = $this->request->getGet('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? '001';
+            
+            $db = \Config\Database::connect();
+            $builder = $db->table('lockr_types');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
+            
+            $result = $builder->get();
+            $types = $result->getResultArray();
+            
+            // API 형식으로 변환
+            $formattedTypes = [];
+            foreach ($types as $type) {
+                $formattedTypes[] = [
+                    'LOCKR_TYPE_CD' => $type['LOCKR_TYPE_CD'],
+                    'LOCKR_TYPE_NM' => $type['LOCKR_TYPE_NM'],
+                    'WIDTH' => intval($type['WIDTH']),
+                    'HEIGHT' => intval($type['HEIGHT']),
+                    'DEPTH' => intval($type['DEPTH']),
+                    'COLOR' => $type['COLOR']
+                ];
+            }
 
             return $this->response->setJSON([
                 'status' => 'success',
-                'types' => $types
+                'types' => $formattedTypes
             ]);
         } catch (\Exception $e) {
             log_message('error', '[ajax_get_locker_types] Error: ' . $e->getMessage());
@@ -1504,178 +1521,7 @@ class Locker extends MainTchrController
     }
 
     /**
-     * 락커 삭제 (Locker4 API 호환)
-     */
-    public function ajax_delete_locker()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $lockr_cd = $this->request->getPost('lockr_cd');
-            
-            if (!$lockr_cd) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '락커 ID가 필요합니다.']);
-            }
-            
-            // DB 삭제 로직 (실제 구현 필요)
-            // $db = \Config\Database::connect();
-            // $db->table('lockrs')->where('LOCKR_CD', $lockr_cd)->delete();
-            
-            return $this->response->setJSON([
-                'status' => 'success',
-                'message' => '락커가 삭제되었습니다.'
-            ]);
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_delete_locker] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * 대시보드 요약 정보 조회
-     */
-    public function ajax_get_dashboard_summary()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $comp_cd = $this->SpoQCahce->getCacheVar('comp_cd');
-            $bcoff_cd = $this->SpoQCahce->getCacheVar('bcoff_cd');
-
-            // 전체 락커 현황 조회
-            $summary = $this->db->table('tb_locker l')
-                               ->select('COUNT(*) as total')
-                               ->select('SUM(CASE WHEN l.locker_status = "available" OR l.locker_status IS NULL THEN 1 ELSE 0 END) as available')
-                               ->select('SUM(CASE WHEN l.locker_status = "occupied" THEN 1 ELSE 0 END) as occupied')
-                               ->select('SUM(CASE WHEN l.locker_status = "maintenance" THEN 1 ELSE 0 END) as maintenance')
-                               ->select('SUM(CASE WHEN l.locker_status = "reserved" THEN 1 ELSE 0 END) as reserved')
-                               ->join('tb_locker_group g', 'l.group_sno = g.group_sno')
-                               ->join('tb_locker_zone z', 'g.zone_sno = z.zone_sno')
-                               ->join('tb_locker_floor f', 'z.floor_sno = f.floor_sno')
-                               ->where('f.comp_cd', $comp_cd)
-                               ->where('f.bcoff_cd', $bcoff_cd)
-                               ->where('l.use_yn', 'Y')
-                               ->get()
-                               ->getRowArray();
-
-            // 층별 현황 조회
-            $floors = $this->db->table('tb_locker_floor f')
-                              ->select('f.floor_sno, f.floor_nm, f.floor_ord')
-                              ->select('COUNT(l.locker_sno) as total')
-                              ->select('SUM(CASE WHEN l.locker_status = "available" OR l.locker_status IS NULL THEN 1 ELSE 0 END) as available')
-                              ->select('SUM(CASE WHEN l.locker_status = "occupied" THEN 1 ELSE 0 END) as occupied')
-                              ->join('tb_locker_zone z', 'f.floor_sno = z.floor_sno', 'left')
-                              ->join('tb_locker_group g', 'z.zone_sno = g.zone_sno', 'left')
-                              ->join('tb_locker l', 'g.group_sno = l.group_sno', 'left')
-                              ->where('f.comp_cd', $comp_cd)
-                              ->where('f.bcoff_cd', $bcoff_cd)
-                              ->where('f.use_yn', 'Y')
-                              ->groupBy('f.floor_sno')
-                              ->orderBy('f.floor_ord', 'ASC')
-                              ->get()
-                              ->getResultArray();
-
-            return $this->response->setJSON([
-                'status' => 'success',
-                'data' => $summary,
-                'floors' => $floors
-            ]);
-
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_get_dashboard_summary] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * 최근 락커 사용 내역 조회
-     */
-    public function ajax_get_recent_history()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $limit = $this->request->getGet('limit') ?: 20;
-
-            // 최근 사용 내역 조회
-            $history = $this->db->table('tb_locker_history h')
-                               ->select('h.*, l.locker_no')
-                               ->join('tb_locker l', 'h.locker_sno = l.locker_sno')
-                               ->orderBy('h.action_date', 'DESC')
-                               ->limit($limit)
-                               ->get()
-                               ->getResultArray();
-
-            return $this->response->setJSON([
-                'status' => 'success',
-                'history' => $history
-            ]);
-
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_get_recent_history] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * 락커 타입 목록 조회 (AJAX)
-     */
-    public function ajax_get_locker_types()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $db = \Config\Database::connect();
-            
-            // lockr_types 테이블 확인
-            $query = $db->query("SHOW TABLES LIKE 'lockr_types'");
-            $tableExists = !empty($query->getResult());
-            
-            if ($tableExists) {
-                $types = $db->table('lockr_types')->get()->getResultArray();
-            } else {
-                // 기본 타입 반환
-                $types = [
-                    ['LOCKR_TYPE_CD' => '1', 'LOCKR_TYPE_NM' => '소형', 'WIDTH' => 40, 'HEIGHT' => 40, 'DEPTH' => 40, 'COLOR' => '#3b82f6'],
-                    ['LOCKR_TYPE_CD' => '2', 'LOCKR_TYPE_NM' => '중형', 'WIDTH' => 50, 'HEIGHT' => 60, 'DEPTH' => 50, 'COLOR' => '#10b981'],
-                    ['LOCKR_TYPE_CD' => '3', 'LOCKR_TYPE_NM' => '대형', 'WIDTH' => 60, 'HEIGHT' => 80, 'DEPTH' => 60, 'COLOR' => '#f59e0b'],
-                    ['LOCKR_TYPE_CD' => '4', 'LOCKR_TYPE_NM' => '특대형', 'WIDTH' => 70, 'HEIGHT' => 100, 'DEPTH' => 70, 'COLOR' => '#8b5cf6']
-                ];
-            }
-            
-            return $this->response->setJSON([
-                'status' => 'success',
-                'types' => $types
-            ]);
-            
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_get_locker_types] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * 락커 구역(Zone) 목록 조회 (AJAX)
+     * 락커 구역 목록 조회 (Locker4 호환)
      */
     public function ajax_get_locker_zones()
     {
@@ -1684,35 +1530,35 @@ class Locker extends MainTchrController
                 return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
             }
 
-            $comp_cd = $this->request->getGet('comp_cd') ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
-            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+            $comp_cd = $this->request->getGet('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? '001';
             
             $db = \Config\Database::connect();
+            $builder = $db->table('lockr_area');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
             
-            // lockr_area 테이블 확인
-            $query = $db->query("SHOW TABLES LIKE 'lockr_area'");
-            $tableExists = !empty($query->getResult());
+            $result = $builder->get();
+            $zones = $result->getResultArray();
             
-            if ($tableExists) {
-                $zones = $db->table('lockr_area')
-                          ->where('COMP_CD', $comp_cd)
-                          ->where('BCOFF_CD', $bcoff_cd)
-                          ->get()
-                          ->getResultArray();
-            } else {
-                // 기본 구역 반환
-                $zones = [
-                    ['LOCKR_KND_CD' => 'zone-1', 'LOCKR_KND_NM' => 'A구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#f0f9ff'],
-                    ['LOCKR_KND_CD' => 'zone-2', 'LOCKR_KND_NM' => 'B구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fef3c7'],
-                    ['LOCKR_KND_CD' => 'zone-3', 'LOCKR_KND_NM' => 'C구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fee2e2']
+            // API 형식으로 변환
+            $formattedZones = [];
+            foreach ($zones as $zone) {
+                $formattedZones[] = [
+                    'LOCKR_KND_CD' => $zone['LOCKR_KND_CD'],
+                    'LOCKR_KND_NM' => $zone['LOCKR_KND_NM'],
+                    'X' => intval($zone['X'] ?? 0),
+                    'Y' => intval($zone['Y'] ?? 0),
+                    'WIDTH' => intval($zone['WIDTH'] ?? 800),
+                    'HEIGHT' => intval($zone['HEIGHT'] ?? 600),
+                    'COLOR' => $zone['COLOR'] ?? '#e5e7eb'
                 ];
             }
-            
+
             return $this->response->setJSON([
                 'status' => 'success',
-                'zones' => $zones
+                'zones' => $formattedZones
             ]);
-            
         } catch (\Exception $e) {
             log_message('error', '[ajax_get_locker_zones] Error: ' . $e->getMessage());
             return $this->response->setJSON([
@@ -1723,7 +1569,7 @@ class Locker extends MainTchrController
     }
 
     /**
-     * 락커 목록 조회 (AJAX)
+     * 락커 목록 조회 (Locker4 호환 - DB에서 실제 데이터 조회)
      */
     public function ajax_get_lockers()
     {
@@ -1732,36 +1578,28 @@ class Locker extends MainTchrController
                 return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
             }
 
-            $comp_cd = $this->request->getGet('comp_cd') ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
-            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+            $comp_cd = $this->request->getGet('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? '001';
             $zone_id = $this->request->getGet('zone_id');
             
             $db = \Config\Database::connect();
+            $builder = $db->table('lockrs');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
             
-            // lockrs 테이블 확인
-            $query = $db->query("SHOW TABLES LIKE 'lockrs'");
-            $tableExists = !empty($query->getResult());
-            
-            if ($tableExists) {
-                $builder = $db->table('lockrs');
-                $builder->where('COMP_CD', $comp_cd);
-                $builder->where('BCOFF_CD', $bcoff_cd);
-                
-                if ($zone_id) {
-                    $builder->where('LOCKR_KND', $zone_id);
-                }
-                
-                $lockers = $builder->get()->getResultArray();
-            } else {
-                // 테스트용 더미 데이터
-                $lockers = [];
+            if ($zone_id) {
+                $builder->where('LOCKR_KND', $zone_id);
             }
+            
+            $builder->orderBy('LOCKR_CD', 'ASC');
+            
+            $result = $builder->get();
+            $lockers = $result->getResultArray();
             
             return $this->response->setJSON([
                 'status' => 'success',
                 'lockers' => $lockers
             ]);
-            
         } catch (\Exception $e) {
             log_message('error', '[ajax_get_lockers] Error: ' . $e->getMessage());
             return $this->response->setJSON([
@@ -1772,7 +1610,7 @@ class Locker extends MainTchrController
     }
 
     /**
-     * 락커 저장 (생성/업데이트) (AJAX)
+     * 락커 저장/업데이트 (Locker4 호환 - 실제 DB 저장)
      */
     public function ajax_save_locker()
     {
@@ -1782,14 +1620,16 @@ class Locker extends MainTchrController
             }
 
             $data = $this->request->getJSON(true);
+            
+            
             $db = \Config\Database::connect();
+            $builder = $db->table('lockrs');
             
-            // 테이블 생성 확인
-            $this->ensureLockerTables();
+            $lockr_cd = $data['LOCKR_CD'] ?? null;
             
-            $lockerData = [
-                'COMP_CD' => $data['COMP_CD'] ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
-                'BCOFF_CD' => $data['BCOFF_CD'] ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
+            $saveData = [
+                'COMP_CD' => $data['COMP_CD'] ?? '001',
+                'BCOFF_CD' => $data['BCOFF_CD'] ?? '001',
                 'LOCKR_KND' => $data['LOCKR_KND'] ?? '',
                 'LOCKR_TYPE_CD' => $data['LOCKR_TYPE_CD'] ?? '1',
                 'X' => $data['X'] ?? 0,
@@ -1797,27 +1637,26 @@ class Locker extends MainTchrController
                 'LOCKR_LABEL' => $data['LOCKR_LABEL'] ?? '',
                 'ROTATION' => $data['ROTATION'] ?? 0,
                 'LOCKR_STAT' => $data['LOCKR_STAT'] ?? '00',
-                'UPDATE_DT' => date('Y-m-d H:i:s')
+                'LOCKR_NO' => $data['LOCKR_NO'] ?? null,
+                'UPDATE_DT' => date('Y-m-d H:i:s'),
+                'UPDATE_BY' => 'system'
             ];
             
-            if (isset($data['LOCKR_CD']) && $data['LOCKR_CD']) {
+            if ($lockr_cd) {
                 // 업데이트
-                $db->table('lockrs')
-                   ->where('LOCKR_CD', $data['LOCKR_CD'])
-                   ->update($lockerData);
-                   
-                $lockerData['LOCKR_CD'] = $data['LOCKR_CD'];
+                $builder->where('LOCKR_CD', $lockr_cd);
+                $builder->update($saveData);
+                $saveData['LOCKR_CD'] = $lockr_cd;
             } else {
-                // 생성
-                $db->table('lockrs')->insert($lockerData);
-                $lockerData['LOCKR_CD'] = $db->insertID();
+                // 새로 삽입
+                $builder->insert($saveData);
+                $saveData['LOCKR_CD'] = $db->insertID();
             }
             
             return $this->response->setJSON([
                 'status' => 'success',
-                'locker' => $lockerData
+                'locker' => $saveData
             ]);
-            
         } catch (\Exception $e) {
             log_message('error', '[ajax_save_locker] Error: ' . $e->getMessage());
             return $this->response->setJSON([
@@ -1828,7 +1667,57 @@ class Locker extends MainTchrController
     }
 
     /**
-     * 구역 추가 (AJAX)
+     * 락커 타입 추가 (AJAX)
+     */
+    public function ajax_add_locker_type()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $data = $this->request->getJSON(true);
+            
+            
+            $db = \Config\Database::connect();
+            $builder = $db->table('lockr_types');
+            
+            // 새 타입 코드 생성 (자동 증가)
+            $query = $builder->selectMax('LOCKR_TYPE_CD', 'max_cd')->where('COMP_CD', '001')->where('BCOFF_CD', '001')->get();
+            $maxCode = $query->getRow()->max_cd ?? 0;
+            $newTypeCode = intval($maxCode) + 1;
+            
+            $insertData = [
+                'LOCKR_TYPE_CD' => strval($newTypeCode),
+                'LOCKR_TYPE_NM' => $data['name'] ?? '새 타입',
+                'WIDTH' => $data['width'] ?? 40,
+                'HEIGHT' => $data['height'] ?? 40,
+                'DEPTH' => $data['depth'] ?? 40,
+                'COLOR' => $data['color'] ?? '#4A90E2',
+                'COMP_CD' => '001',
+                'BCOFF_CD' => '001',
+                'REG_DT' => date('Y-m-d H:i:s'),
+                'UPDATE_DT' => date('Y-m-d H:i:s')
+            ];
+            
+            $builder->insert($insertData);
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'type' => $insertData
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_add_locker_type] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 구역 추가 (Locker4 호환)
      */
     public function ajax_add_zone()
     {
@@ -1838,30 +1727,34 @@ class Locker extends MainTchrController
             }
 
             $data = $this->request->getJSON(true);
+            
+            
             $db = \Config\Database::connect();
+            $builder = $db->table('lockr_area');
             
-            // 테이블 생성 확인
-            $this->ensureLockerTables();
+            // 새 구역 코드 생성
+            $newZoneCode = 'zone-' . time();
             
-            $zoneData = [
-                'LOCKR_KND_CD' => 'zone-' . time(),
+            $insertData = [
+                'LOCKR_KND_CD' => $newZoneCode,
                 'LOCKR_KND_NM' => $data['zone_nm'] ?? '새 구역',
-                'COMP_CD' => $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
-                'BCOFF_CD' => $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
                 'X' => 0,
                 'Y' => 0,
                 'WIDTH' => 800,
                 'HEIGHT' => 600,
                 'COLOR' => $data['color'] ?? '#e5e7eb',
+                'COMP_CD' => '001',
+                'BCOFF_CD' => '001',
                 'FLOOR' => 1,
-                'CRE_DATETM' => date('Y-m-d H:i:s')
+                'REG_DT' => date('Y-m-d H:i:s'),
+                'UPDATE_DT' => date('Y-m-d H:i:s')
             ];
             
-            $db->table('lockr_area')->insert($zoneData);
+            $builder->insert($insertData);
             
             return $this->response->setJSON([
                 'status' => 'success',
-                'zone' => $zoneData
+                'zone' => $insertData
             ]);
             
         } catch (\Exception $e) {
@@ -1873,113 +1766,4 @@ class Locker extends MainTchrController
         }
     }
 
-    /**
-     * 테이블 생성 확인 및 생성
-     */
-    private function ensureLockerTables()
-    {
-        $db = \Config\Database::connect();
-        
-        // lockrs 테이블 생성
-        $db->query("CREATE TABLE IF NOT EXISTS `lockrs` (
-            `LOCKR_CD` int(11) NOT NULL AUTO_INCREMENT,
-            `COMP_CD` varchar(10) NOT NULL DEFAULT '001',
-            `BCOFF_CD` varchar(10) NOT NULL DEFAULT '001',
-            `LOCKR_KND` varchar(10) DEFAULT NULL,
-            `LOCKR_TYPE_CD` varchar(10) NOT NULL DEFAULT '1',
-            `X` int(11) NOT NULL DEFAULT 0,
-            `Y` int(11) NOT NULL DEFAULT 0,
-            `LOCKR_LABEL` varchar(50) NOT NULL,
-            `ROTATION` int(11) DEFAULT 0,
-            `DOOR_DIRECTION` varchar(10) DEFAULT NULL,
-            `FRONT_VIEW_X` int(11) DEFAULT NULL,
-            `FRONT_VIEW_Y` int(11) DEFAULT NULL,
-            `GROUP_NUM` varchar(10) DEFAULT NULL,
-            `LOCKR_GENDR_SET` varchar(10) DEFAULT NULL,
-            `LOCKR_NO` varchar(20) DEFAULT NULL,
-            `PARENT_LOCKR_CD` int(11) DEFAULT NULL,
-            `TIER_LEVEL` int(11) DEFAULT NULL,
-            `BUY_EVENT_SNO` int(11) DEFAULT NULL,
-            `MEM_SNO` int(11) DEFAULT NULL,
-            `MEM_NM` varchar(100) DEFAULT NULL,
-            `LOCKR_USE_S_DATE` date DEFAULT NULL,
-            `LOCKR_USE_E_DATE` date DEFAULT NULL,
-            `LOCKR_STAT` varchar(2) DEFAULT '00',
-            `MEMO` text DEFAULT NULL,
-            `UPDATE_BY` varchar(50) DEFAULT NULL,
-            `UPDATE_DT` datetime DEFAULT NULL,
-            PRIMARY KEY (`LOCKR_CD`),
-            KEY `idx_comp_bcoff` (`COMP_CD`, `BCOFF_CD`),
-            KEY `idx_parent` (`PARENT_LOCKR_CD`),
-            KEY `idx_stat` (`LOCKR_STAT`),
-            KEY `idx_member` (`MEM_SNO`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        
-        // lockr_area 테이블 생성
-        $db->query("CREATE TABLE IF NOT EXISTS `lockr_area` (
-            `LOCKR_KND_CD` varchar(36) NOT NULL,
-            `LOCKR_KND_NM` varchar(50),
-            `COMP_CD` varchar(20) NOT NULL,
-            `BCOFF_CD` varchar(20) NOT NULL,
-            `X` int NOT NULL,
-            `Y` int NOT NULL,
-            `WIDTH` int NOT NULL,
-            `HEIGHT` int NOT NULL,
-            `COLOR` varchar(7),
-            `FLOOR` int DEFAULT 1,
-            `CRE_DATETM` datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`LOCKR_KND_CD`, `COMP_CD`, `BCOFF_CD`),
-            INDEX idx_comp_bcoff (`COMP_CD`, `BCOFF_CD`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        
-        // lockr_types 테이블 생성
-        $db->query("CREATE TABLE IF NOT EXISTS `lockr_types` (
-            `LOCKR_TYPE_CD` varchar(10) NOT NULL,
-            `LOCKR_TYPE_NM` varchar(50),
-            `WIDTH` int NOT NULL,
-            `HEIGHT` int NOT NULL,
-            `DEPTH` int NOT NULL,
-            `COLOR` varchar(7),
-            `PRICE` decimal(10,2),
-            PRIMARY KEY (`LOCKR_TYPE_CD`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    }
-
-    /**
-     * 만료 예정 락커 조회
-     */
-    public function ajax_get_expiring_lockers()
-    {
-        try {
-            if (!$this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
-            }
-
-            $days = $this->request->getGet('days') ?: 30;
-
-            // 만료 예정 락커 조회
-            $expiringDate = date('Y-m-d', strtotime("+{$days} days"));
-            
-            $lockers = $this->db->table('tb_locker')
-                               ->where('locker_status', 'occupied')
-                               ->where('expire_date <=', $expiringDate)
-                               ->where('expire_date >=', date('Y-m-d'))
-                               ->where('use_yn', 'Y')
-                               ->orderBy('expire_date', 'ASC')
-                               ->get()
-                               ->getResultArray();
-
-            return $this->response->setJSON([
-                'status' => 'success',
-                'lockers' => $lockers
-            ]);
-
-        } catch (\Exception $e) {
-            log_message('error', '[ajax_get_expiring_lockers] Error: ' . $e->getMessage());
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => '오류가 발생했습니다: ' . $e->getMessage()
-            ]);
-        }
-    }
 }
