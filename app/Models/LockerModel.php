@@ -401,6 +401,69 @@ class LockerModel extends Model
                 log_message('info', '[LockerModel::createTestData] Inserted test locker zones');
             }
 
+            // 락커 테스트 데이터 추가
+            $lockersBuilder = $this->db->table('lockrs');
+            $lockersBuilder->where('COMP_CD', $comp_cd)->where('BCOFF_CD', $bcoff_cd);
+            $existingLockers = $lockersBuilder->countAllResults();
+
+            if ($existingLockers == 0) {
+                $testLockers = [];
+                
+                // A구역 락커들
+                for ($i = 1; $i <= 10; $i++) {
+                    $testLockers[] = [
+                        'LOCKR_CD' => 'L-A-' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_TYPE_CD' => strval(($i % 3) + 1), // 타입 1, 2, 3 순환
+                        'LOCKR_KND' => 'zone-1',
+                        'X' => 50 + (($i - 1) % 5) * 80,
+                        'Y' => 50 + floor(($i - 1) / 5) * 100,
+                        'ROTATION' => 0,
+                        'LOCKR_STAT' => '00', // 사용가능
+                        'LOCKR_NO' => 'A' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_LABEL' => 'A-' . $i,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd
+                    ];
+                }
+                
+                // B구역 락커들
+                for ($i = 1; $i <= 8; $i++) {
+                    $testLockers[] = [
+                        'LOCKR_CD' => 'L-B-' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_TYPE_CD' => '2', // 중형 타입
+                        'LOCKR_KND' => 'zone-2',
+                        'X' => 100 + (($i - 1) % 4) * 100,
+                        'Y' => 100 + floor(($i - 1) / 4) * 120,
+                        'ROTATION' => 0,
+                        'LOCKR_STAT' => $i <= 3 ? '01' : '00', // 일부는 사용중
+                        'LOCKR_NO' => 'B' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_LABEL' => 'B-' . $i,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd
+                    ];
+                }
+                
+                // C구역 락커들
+                for ($i = 1; $i <= 6; $i++) {
+                    $testLockers[] = [
+                        'LOCKR_CD' => 'L-C-' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_TYPE_CD' => '3', // 대형 타입
+                        'LOCKR_KND' => 'zone-3',
+                        'X' => 80 + (($i - 1) % 3) * 120,
+                        'Y' => 80 + floor(($i - 1) / 3) * 140,
+                        'ROTATION' => ($i % 2) * 90, // 일부는 90도 회전
+                        'LOCKR_STAT' => '00',
+                        'LOCKR_NO' => 'C' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                        'LOCKR_LABEL' => 'C-' . $i,
+                        'COMP_CD' => $comp_cd,
+                        'BCOFF_CD' => $bcoff_cd
+                    ];
+                }
+                
+                $this->db->table('lockrs')->insertBatch($testLockers);
+                log_message('info', '[LockerModel::createTestData] Inserted ' . count($testLockers) . ' test lockers');
+            }
+
             return true;
         } catch (\Exception $e) {
             log_message('error', '[LockerModel::createTestData] Error: ' . $e->getMessage());
