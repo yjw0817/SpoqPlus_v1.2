@@ -1633,6 +1633,319 @@ class Locker extends MainTchrController
     }
 
     /**
+     * 락커 타입 목록 조회 (AJAX)
+     */
+    public function ajax_get_locker_types()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $db = \Config\Database::connect();
+            
+            // lockr_types 테이블 확인
+            $query = $db->query("SHOW TABLES LIKE 'lockr_types'");
+            $tableExists = !empty($query->getResult());
+            
+            if ($tableExists) {
+                $types = $db->table('lockr_types')->get()->getResultArray();
+            } else {
+                // 기본 타입 반환
+                $types = [
+                    ['LOCKR_TYPE_CD' => '1', 'LOCKR_TYPE_NM' => '소형', 'WIDTH' => 40, 'HEIGHT' => 40, 'DEPTH' => 40, 'COLOR' => '#3b82f6'],
+                    ['LOCKR_TYPE_CD' => '2', 'LOCKR_TYPE_NM' => '중형', 'WIDTH' => 50, 'HEIGHT' => 60, 'DEPTH' => 50, 'COLOR' => '#10b981'],
+                    ['LOCKR_TYPE_CD' => '3', 'LOCKR_TYPE_NM' => '대형', 'WIDTH' => 60, 'HEIGHT' => 80, 'DEPTH' => 60, 'COLOR' => '#f59e0b'],
+                    ['LOCKR_TYPE_CD' => '4', 'LOCKR_TYPE_NM' => '특대형', 'WIDTH' => 70, 'HEIGHT' => 100, 'DEPTH' => 70, 'COLOR' => '#8b5cf6']
+                ];
+            }
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'types' => $types
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_get_locker_types] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 구역(Zone) 목록 조회 (AJAX)
+     */
+    public function ajax_get_locker_zones()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $comp_cd = $this->request->getGet('comp_cd') ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+            
+            $db = \Config\Database::connect();
+            
+            // lockr_area 테이블 확인
+            $query = $db->query("SHOW TABLES LIKE 'lockr_area'");
+            $tableExists = !empty($query->getResult());
+            
+            if ($tableExists) {
+                $zones = $db->table('lockr_area')
+                          ->where('COMP_CD', $comp_cd)
+                          ->where('BCOFF_CD', $bcoff_cd)
+                          ->get()
+                          ->getResultArray();
+            } else {
+                // 기본 구역 반환
+                $zones = [
+                    ['LOCKR_KND_CD' => 'zone-1', 'LOCKR_KND_NM' => 'A구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#f0f9ff'],
+                    ['LOCKR_KND_CD' => 'zone-2', 'LOCKR_KND_NM' => 'B구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fef3c7'],
+                    ['LOCKR_KND_CD' => 'zone-3', 'LOCKR_KND_NM' => 'C구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fee2e2']
+                ];
+            }
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'zones' => $zones
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_get_locker_zones] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 목록 조회 (AJAX)
+     */
+    public function ajax_get_lockers()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $comp_cd = $this->request->getGet('comp_cd') ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
+            $bcoff_cd = $this->request->getGet('bcoff_cd') ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+            $zone_id = $this->request->getGet('zone_id');
+            
+            $db = \Config\Database::connect();
+            
+            // lockrs 테이블 확인
+            $query = $db->query("SHOW TABLES LIKE 'lockrs'");
+            $tableExists = !empty($query->getResult());
+            
+            if ($tableExists) {
+                $builder = $db->table('lockrs');
+                $builder->where('COMP_CD', $comp_cd);
+                $builder->where('BCOFF_CD', $bcoff_cd);
+                
+                if ($zone_id) {
+                    $builder->where('LOCKR_KND', $zone_id);
+                }
+                
+                $lockers = $builder->get()->getResultArray();
+            } else {
+                // 테스트용 더미 데이터
+                $lockers = [];
+            }
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'lockers' => $lockers
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_get_lockers] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 락커 저장 (생성/업데이트) (AJAX)
+     */
+    public function ajax_save_locker()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $data = $this->request->getJSON(true);
+            $db = \Config\Database::connect();
+            
+            // 테이블 생성 확인
+            $this->ensureLockerTables();
+            
+            $lockerData = [
+                'COMP_CD' => $data['COMP_CD'] ?? $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
+                'BCOFF_CD' => $data['BCOFF_CD'] ?? $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
+                'LOCKR_KND' => $data['LOCKR_KND'] ?? '',
+                'LOCKR_TYPE_CD' => $data['LOCKR_TYPE_CD'] ?? '1',
+                'X' => $data['X'] ?? 0,
+                'Y' => $data['Y'] ?? 0,
+                'LOCKR_LABEL' => $data['LOCKR_LABEL'] ?? '',
+                'ROTATION' => $data['ROTATION'] ?? 0,
+                'LOCKR_STAT' => $data['LOCKR_STAT'] ?? '00',
+                'UPDATE_DT' => date('Y-m-d H:i:s')
+            ];
+            
+            if (isset($data['LOCKR_CD']) && $data['LOCKR_CD']) {
+                // 업데이트
+                $db->table('lockrs')
+                   ->where('LOCKR_CD', $data['LOCKR_CD'])
+                   ->update($lockerData);
+                   
+                $lockerData['LOCKR_CD'] = $data['LOCKR_CD'];
+            } else {
+                // 생성
+                $db->table('lockrs')->insert($lockerData);
+                $lockerData['LOCKR_CD'] = $db->insertID();
+            }
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'locker' => $lockerData
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_save_locker] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 구역 추가 (AJAX)
+     */
+    public function ajax_add_zone()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => '잘못된 접근입니다.']);
+            }
+
+            $data = $this->request->getJSON(true);
+            $db = \Config\Database::connect();
+            
+            // 테이블 생성 확인
+            $this->ensureLockerTables();
+            
+            $zoneData = [
+                'LOCKR_KND_CD' => 'zone-' . time(),
+                'LOCKR_KND_NM' => $data['zone_nm'] ?? '새 구역',
+                'COMP_CD' => $this->SpoQCahce->getCacheVar('comp_cd') ?? '001',
+                'BCOFF_CD' => $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001',
+                'X' => 0,
+                'Y' => 0,
+                'WIDTH' => 800,
+                'HEIGHT' => 600,
+                'COLOR' => $data['color'] ?? '#e5e7eb',
+                'FLOOR' => 1,
+                'CRE_DATETM' => date('Y-m-d H:i:s')
+            ];
+            
+            $db->table('lockr_area')->insert($zoneData);
+            
+            return $this->response->setJSON([
+                'status' => 'success',
+                'zone' => $zoneData
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', '[ajax_add_zone] Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => '오류가 발생했습니다: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 테이블 생성 확인 및 생성
+     */
+    private function ensureLockerTables()
+    {
+        $db = \Config\Database::connect();
+        
+        // lockrs 테이블 생성
+        $db->query("CREATE TABLE IF NOT EXISTS `lockrs` (
+            `LOCKR_CD` int(11) NOT NULL AUTO_INCREMENT,
+            `COMP_CD` varchar(10) NOT NULL DEFAULT '001',
+            `BCOFF_CD` varchar(10) NOT NULL DEFAULT '001',
+            `LOCKR_KND` varchar(10) DEFAULT NULL,
+            `LOCKR_TYPE_CD` varchar(10) NOT NULL DEFAULT '1',
+            `X` int(11) NOT NULL DEFAULT 0,
+            `Y` int(11) NOT NULL DEFAULT 0,
+            `LOCKR_LABEL` varchar(50) NOT NULL,
+            `ROTATION` int(11) DEFAULT 0,
+            `DOOR_DIRECTION` varchar(10) DEFAULT NULL,
+            `FRONT_VIEW_X` int(11) DEFAULT NULL,
+            `FRONT_VIEW_Y` int(11) DEFAULT NULL,
+            `GROUP_NUM` varchar(10) DEFAULT NULL,
+            `LOCKR_GENDR_SET` varchar(10) DEFAULT NULL,
+            `LOCKR_NO` varchar(20) DEFAULT NULL,
+            `PARENT_LOCKR_CD` int(11) DEFAULT NULL,
+            `TIER_LEVEL` int(11) DEFAULT NULL,
+            `BUY_EVENT_SNO` int(11) DEFAULT NULL,
+            `MEM_SNO` int(11) DEFAULT NULL,
+            `MEM_NM` varchar(100) DEFAULT NULL,
+            `LOCKR_USE_S_DATE` date DEFAULT NULL,
+            `LOCKR_USE_E_DATE` date DEFAULT NULL,
+            `LOCKR_STAT` varchar(2) DEFAULT '00',
+            `MEMO` text DEFAULT NULL,
+            `UPDATE_BY` varchar(50) DEFAULT NULL,
+            `UPDATE_DT` datetime DEFAULT NULL,
+            PRIMARY KEY (`LOCKR_CD`),
+            KEY `idx_comp_bcoff` (`COMP_CD`, `BCOFF_CD`),
+            KEY `idx_parent` (`PARENT_LOCKR_CD`),
+            KEY `idx_stat` (`LOCKR_STAT`),
+            KEY `idx_member` (`MEM_SNO`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        
+        // lockr_area 테이블 생성
+        $db->query("CREATE TABLE IF NOT EXISTS `lockr_area` (
+            `LOCKR_KND_CD` varchar(36) NOT NULL,
+            `LOCKR_KND_NM` varchar(50),
+            `COMP_CD` varchar(20) NOT NULL,
+            `BCOFF_CD` varchar(20) NOT NULL,
+            `X` int NOT NULL,
+            `Y` int NOT NULL,
+            `WIDTH` int NOT NULL,
+            `HEIGHT` int NOT NULL,
+            `COLOR` varchar(7),
+            `FLOOR` int DEFAULT 1,
+            `CRE_DATETM` datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`LOCKR_KND_CD`, `COMP_CD`, `BCOFF_CD`),
+            INDEX idx_comp_bcoff (`COMP_CD`, `BCOFF_CD`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        
+        // lockr_types 테이블 생성
+        $db->query("CREATE TABLE IF NOT EXISTS `lockr_types` (
+            `LOCKR_TYPE_CD` varchar(10) NOT NULL,
+            `LOCKR_TYPE_NM` varchar(50),
+            `WIDTH` int NOT NULL,
+            `HEIGHT` int NOT NULL,
+            `DEPTH` int NOT NULL,
+            `COLOR` varchar(7),
+            `PRICE` decimal(10,2),
+            PRIMARY KEY (`LOCKR_TYPE_CD`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    /**
      * 만료 예정 락커 조회
      */
     public function ajax_get_expiring_lockers()

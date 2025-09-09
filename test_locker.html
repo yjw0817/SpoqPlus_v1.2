@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>락커 관리 시스템 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4A90E2;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #4A90E2;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #4A90E2;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left-color: #5cb85c;
+            background-color: #f0fff0;
+        }
+        .error {
+            border-left-color: #d9534f;
+            background-color: #fff0f0;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status.success {
+            background-color: #5cb85c;
+            color: white;
+        }
+        .status.error {
+            background-color: #d9534f;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 락커 관리 시스템 테스트</h1>
+        
+        <!-- 설정 정보 -->
+        <div class="test-section">
+            <h3>⚙️ 설정 정보</h3>
+            <div id="configInfo" class="result"></div>
+        </div>
+
+        <!-- 락커 타입 테스트 -->
+        <div class="test-section">
+            <h3>📦 락커 타입 조회</h3>
+            <button onclick="testGetLockerTypes()">타입 목록 조회</button>
+            <div id="typesResult" class="result"></div>
+        </div>
+
+        <!-- 구역 테스트 -->
+        <div class="test-section">
+            <h3>🗺️ 구역 관리</h3>
+            <button onclick="testGetZones()">구역 목록 조회</button>
+            <button onclick="testAddZone()">새 구역 추가</button>
+            <div id="zonesResult" class="result"></div>
+        </div>
+
+        <!-- 락커 테스트 -->
+        <div class="test-section">
+            <h3>🔐 락커 관리</h3>
+            <button onclick="testGetLockers()">락커 목록 조회</button>
+            <button onclick="testCreateLocker()">새 락커 생성</button>
+            <button onclick="testUpdateLocker()">락커 업데이트</button>
+            <div id="lockersResult" class="result"></div>
+        </div>
+
+        <!-- 통합 테스트 -->
+        <div class="test-section">
+            <h3>🚀 통합 테스트</h3>
+            <button onclick="runFullTest()">전체 시스템 테스트</button>
+            <div id="fullTestResult" class="result"></div>
+        </div>
+    </div>
+
+    <!-- LockerConfig 설정 -->
+    <script>
+        window.LockerConfig = {
+            baseUrl: '/SpoqPlus_Color_Admin_Except_Mobile_claude2',
+            csrfHeader: 'X-CSRF-TOKEN',
+            csrfHash: 'test-csrf-token',
+            companyCode: '001',
+            officeCode: '001'
+        };
+    </script>
+
+    <!-- API 스크립트 로드 -->
+    <script src="assets/js/locker-api.js"></script>
+
+    <script>
+        // 설정 정보 표시
+        document.getElementById('configInfo').textContent = JSON.stringify(window.LockerConfig, null, 2);
+
+        // 결과 표시 함수
+        function showResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + (isSuccess ? 'success' : 'error');
+            
+            const status = document.createElement('div');
+            status.className = 'status ' + (isSuccess ? 'success' : 'error');
+            status.textContent = isSuccess ? '✓ 성공' : '✗ 실패';
+            
+            element.innerHTML = '';
+            element.appendChild(status);
+            element.appendChild(document.createTextNode(
+                typeof data === 'object' ? JSON.stringify(data, null, 2) : data
+            ));
+        }
+
+        // 락커 타입 조회 테스트
+        async function testGetLockerTypes() {
+            try {
+                console.log('락커 타입 조회 시작...');
+                const types = await window.LockerAPI.getLockerTypes();
+                showResult('typesResult', {
+                    count: types.length,
+                    types: types
+                });
+            } catch (error) {
+                showResult('typesResult', error.message, false);
+            }
+        }
+
+        // 구역 목록 조회 테스트
+        async function testGetZones() {
+            try {
+                console.log('구역 목록 조회 시작...');
+                const zones = await window.LockerAPI.getZones();
+                showResult('zonesResult', {
+                    count: zones.length,
+                    zones: zones
+                });
+            } catch (error) {
+                showResult('zonesResult', error.message, false);
+            }
+        }
+
+        // 새 구역 추가 테스트
+        async function testAddZone() {
+            try {
+                console.log('새 구역 추가 시작...');
+                const zoneName = 'D구역 (테스트)';
+                const color = '#' + Math.floor(Math.random()*16777215).toString(16);
+                const newZone = await window.LockerAPI.addZone(zoneName, color);
+                
+                if (newZone) {
+                    showResult('zonesResult', {
+                        message: '구역 추가 성공',
+                        zone: newZone
+                    });
+                } else {
+                    showResult('zonesResult', '구역 추가 실패', false);
+                }
+            } catch (error) {
+                showResult('zonesResult', error.message, false);
+            }
+        }
+
+        // 락커 목록 조회 테스트
+        async function testGetLockers() {
+            try {
+                console.log('락커 목록 조회 시작...');
+                const lockers = await window.LockerAPI.getLockers('001', '001');
+                showResult('lockersResult', {
+                    count: lockers.length,
+                    lockers: lockers
+                });
+            } catch (error) {
+                showResult('lockersResult', error.message, false);
+            }
+        }
+
+        // 새 락커 생성 테스트
+        async function testCreateLocker() {
+            try {
+                console.log('새 락커 생성 시작...');
+                const newLocker = {
+                    typeId: '1',
+                    x: Math.floor(Math.random() * 500),
+                    y: Math.floor(Math.random() * 500),
+                    rotation: 0,
+                    zoneId: 'zone-1',
+                    number: 'TEST-' + Date.now(),
+                    status: 'available'
+                };
+                
+                const savedLocker = await window.LockerAPI.saveLocker(newLocker);
+                
+                if (savedLocker) {
+                    showResult('lockersResult', {
+                        message: '락커 생성 성공',
+                        locker: savedLocker
+                    });
+                } else {
+                    showResult('lockersResult', '락커 생성 실패', false);
+                }
+            } catch (error) {
+                showResult('lockersResult', error.message, false);
+            }
+        }
+
+        // 락커 업데이트 테스트
+        async function testUpdateLocker() {
+            try {
+                console.log('락커 업데이트 테스트...');
+                
+                // 먼저 락커 목록을 가져옴
+                const lockers = await window.LockerAPI.getLockers('001', '001');
+                
+                if (lockers.length === 0) {
+                    showResult('lockersResult', '업데이트할 락커가 없습니다. 먼저 락커를 생성하세요.', false);
+                    return;
+                }
+                
+                // 첫 번째 락커를 업데이트
+                const locker = lockers[0];
+                locker.x = Math.floor(Math.random() * 500);
+                locker.y = Math.floor(Math.random() * 500);
+                locker.rotation = (locker.rotation + 90) % 360;
+                
+                const updatedLocker = await window.LockerAPI.saveLocker(locker);
+                
+                if (updatedLocker) {
+                    showResult('lockersResult', {
+                        message: '락커 업데이트 성공',
+                        locker: updatedLocker
+                    });
+                } else {
+                    showResult('lockersResult', '락커 업데이트 실패', false);
+                }
+            } catch (error) {
+                showResult('lockersResult', error.message, false);
+            }
+        }
+
+        // 전체 시스템 테스트
+        async function runFullTest() {
+            const results = [];
+            
+            try {
+                // 1. 타입 조회 테스트
+                const types = await window.LockerAPI.getLockerTypes();
+                results.push({
+                    test: '락커 타입 조회',
+                    status: types.length > 0 ? 'PASS' : 'FAIL',
+                    count: types.length
+                });
+
+                // 2. 구역 조회 테스트
+                const zones = await window.LockerAPI.getZones();
+                results.push({
+                    test: '구역 목록 조회',
+                    status: zones.length > 0 ? 'PASS' : 'FAIL',
+                    count: zones.length
+                });
+
+                // 3. 락커 조회 테스트
+                const lockers = await window.LockerAPI.getLockers('001', '001');
+                results.push({
+                    test: '락커 목록 조회',
+                    status: 'PASS',
+                    count: lockers.length
+                });
+
+                // 4. 락커 생성 테스트
+                const newLocker = {
+                    typeId: '1',
+                    x: 100,
+                    y: 100,
+                    rotation: 0,
+                    zoneId: zones[0]?.id || 'zone-1',
+                    number: 'FULL-TEST-' + Date.now(),
+                    status: 'available'
+                };
+                
+                const savedLocker = await window.LockerAPI.saveLocker(newLocker);
+                results.push({
+                    test: '락커 생성',
+                    status: savedLocker ? 'PASS' : 'FAIL',
+                    lockerId: savedLocker?.lockrCd
+                });
+
+                // 5. 락커 업데이트 테스트
+                if (savedLocker) {
+                    savedLocker.x = 200;
+                    savedLocker.y = 200;
+                    const updatedLocker = await window.LockerAPI.saveLocker(savedLocker);
+                    results.push({
+                        test: '락커 업데이트',
+                        status: updatedLocker ? 'PASS' : 'FAIL'
+                    });
+                }
+
+                // 결과 표시
+                const allPassed = results.every(r => r.status === 'PASS');
+                showResult('fullTestResult', {
+                    overall: allPassed ? 'ALL TESTS PASSED ✓' : 'SOME TESTS FAILED ✗',
+                    results: results,
+                    timestamp: new Date().toISOString()
+                }, allPassed);
+                
+            } catch (error) {
+                showResult('fullTestResult', {
+                    error: error.message,
+                    results: results
+                }, false);
+            }
+        }
+
+        // 페이지 로드 시 자동으로 타입 조회
+        window.addEventListener('load', function() {
+            console.log('락커 관리 시스템 테스트 페이지 로드 완료');
+            console.log('LockerAPI 사용 가능:', typeof window.LockerAPI !== 'undefined');
+        });
+    </script>
+</body>
+</html>
