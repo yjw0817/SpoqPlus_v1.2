@@ -53,7 +53,8 @@
         alignGuides: [],
         LOCKER_VISUAL_SCALE: 2.0,
         GRID_SIZE: 20,
-        SNAP_THRESHOLD: 10
+        SNAP_THRESHOLD: 10,
+        hasAutoFitted: false
     };
 
     // ============================================
@@ -101,10 +102,7 @@
             }
             
             if (window.PreloadedData.lockers) {
-                console.log('[Enhanced] Raw locker data from server:', window.PreloadedData.lockers);
                 state.lockers = convertLockerData(window.PreloadedData.lockers);
-                console.log('[Enhanced] Converted locker data:', state.lockers);
-                console.log('[Enhanced] Current selected zone:', state.selectedZone);
                 
                 // 구역이 선택된 후에 switchZone 호출하여 렌더링
                 if (state.selectedZone) {
@@ -323,8 +321,6 @@
         const svg = document.getElementById('lockerCanvas');
         if (!svg) return;
         
-        console.log('[Enhanced] Rendering lockers for zone:', state.selectedZone);
-        console.log('[Enhanced] Available lockers:', state.lockers.length);
         
         // 기존 락커 그룹 제거
         let lockersGroup = svg.querySelector('#lockersGroup');
@@ -337,26 +333,12 @@
         lockersGroup.id = 'lockersGroup';
         
         // 현재 구역의 락커만 렌더링 (state.selectedZone은 ID 문자열)
-        console.log('[Enhanced] Filtering lockers - selectedZone:', state.selectedZone);
-        console.log('[Enhanced] Sample locker zoneId:', state.lockers[0]?.zoneId);
-        const currentLockers = state.lockers.filter(l => {
-            // 디버깅: 각 락커의 zoneId 확인
-            if (l.zoneId === state.selectedZone) {
-                console.log('[Enhanced] Matched locker:', l.id, 'zone:', l.zoneId);
-                return true;
-            }
-            return false;
-        });
-        console.log('[Enhanced] Lockers for current zone:', currentLockers.length);
+        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
         
         currentLockers.forEach(locker => {
-            console.log('[Enhanced] Creating SVG for locker:', locker);
             const lockerElement = createLockerSVG(locker);
             if (lockerElement) {
-                console.log('[Enhanced] Locker SVG created successfully');
                 lockersGroup.appendChild(lockerElement);
-            } else {
-                console.warn('[Enhanced] Failed to create SVG for locker:', locker);
             }
         });
         
@@ -364,6 +346,14 @@
         
         // 선택 UI 업데이트
         updateSelectionUI();
+        
+        // 초기 로드 시 락커들을 중앙에 배치
+        if (currentLockers.length > 0 && !state.hasAutoFitted) {
+            setTimeout(() => {
+                autoFitLockers();
+                state.hasAutoFitted = true;
+            }, 100);
+        }
     }
 
     // ============================================
@@ -385,15 +375,6 @@
                     stroke-width="${0.5 * scale}"
                     rx="${2 * scale}"
                     ry="${2 * scale}"
-                />
-                <line
-                    x1="10"
-                    y1="${height - 5}"
-                    x2="${width - 10}"
-                    y2="${height - 5}"
-                    stroke="${type.color || '#1e40af'}"
-                    stroke-width="4"
-                    opacity="0.9"
                 />
             </svg>
         `;
@@ -441,18 +422,7 @@
         rect.setAttribute('stroke-width', state.selectedLockerIds.has(locker.id) ? '2' : '1');
         rect.setAttribute('rx', 2 * scale);
         
-        // 전면 표시선 (평면 모드에서만)
-        if (state.currentViewMode === 'floor') {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', 5);
-            line.setAttribute('y1', (depth * scale) - 3);
-            line.setAttribute('x2', (width * scale) - 5);
-            line.setAttribute('y2', (depth * scale) - 3);
-            line.setAttribute('stroke', type.color || '#1e40af');
-            line.setAttribute('stroke-width', '3');
-            line.setAttribute('opacity', '0.8');
-            g.appendChild(line);
-        }
+        // 전면 표시선 제거 (사용자 요청에 따라 제거)
         
         // 락커 번호
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -696,11 +666,44 @@
     function handleCanvasWheel(event) {
         event.preventDefault();
         
-        const delta = event.deltaY > 0 ? 0.9 : 1.1;
-        const newZoom = Math.max(0.5, Math.min(3, state.zoomLevel * delta));
+        // 마우스 위치 가져오기
+        const svg = document.getElementById('lockerCanvas');
+        const rect = svg.getBoundingClientRect();
         
+        // 마우스의 SVG 좌표 계산
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        
+        // 현재 viewBox 정보
+        const currentViewBox = svg.getAttribute('viewBox') || `0 0 ${state.canvasWidth} ${state.canvasHeight}`;
+        const [vx, vy, vw, vh] = currentViewBox.split(' ').map(Number);
+        
+        // SVG 좌표계에서의 마우스 위치
+        const svgX = vx + (mouseX / rect.width) * vw;
+        const svgY = vy + (mouseY / rect.height) * vh;
+        
+        // 줌 계산
+        const delta = event.deltaY > 0 ? 0.9 : 1.1;
+        const oldZoom = state.zoomLevel;
+        const newZoom = Math.max(0.5, Math.min(3, oldZoom * delta));
+        
+        // 줌 레벨 업데이트
         state.zoomLevel = newZoom;
-        applyZoom();
+        
+        // 새로운 viewBox 크기
+        const newVW = state.canvasWidth / newZoom;
+        const newVH = state.canvasHeight / newZoom;
+        
+        // 마우스 포인터를 중심으로 줌이 되도록 viewBox 위치 조정
+        const zoomRatio = oldZoom / newZoom;
+        const newVX = svgX - (svgX - vx) * zoomRatio - (mouseX / rect.width) * (newVW - vw);
+        const newVY = svgY - (svgY - vy) * zoomRatio - (mouseY / rect.height) * (newVH - vh);
+        
+        // viewBox 업데이트
+        svg.setAttribute('viewBox', `${newVX} ${newVY} ${newVW} ${newVH}`);
+        
+        // panOffset 업데이트 (다른 기능과의 호환성을 위해)
+        state.panOffset = { x: -newVX, y: -newVY };
     }
 
     // ============================================
@@ -1078,6 +1081,7 @@
     function switchZone(zoneId) {
         console.log('[Enhanced] Switching to zone ID:', zoneId);
         state.selectedZone = zoneId;
+        state.hasAutoFitted = false; // 구역 전환 시 자동 맞춤 리셋
         
         // 해당 구역의 탭을 활성화
         renderZoneTabs();
