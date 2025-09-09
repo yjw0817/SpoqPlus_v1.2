@@ -24,6 +24,11 @@
         dragOffset: { x: 0, y: 0 },
         draggedLockers: [],
         
+        // 캔버스 패닝 상태
+        isPanning: false,
+        panStartPoint: { x: 0, y: 0 },
+        panStartOffset: { x: 0, y: 0 },
+        
         // 뷰 모드
         currentViewMode: 'floor', // 'floor' | 'front'
         isTransitioningToFloor: false,
@@ -376,6 +381,15 @@
                     rx="${2 * scale}"
                     ry="${2 * scale}"
                 />
+                <line
+                    x1="5"
+                    y1="5"
+                    x2="${width - 5}"
+                    y2="5"
+                    stroke="${type.color || '#1e40af'}"
+                    stroke-width="2"
+                    opacity="0.6"
+                />
             </svg>
         `;
     }
@@ -422,7 +436,18 @@
         rect.setAttribute('stroke-width', state.selectedLockerIds.has(locker.id) ? '2' : '1');
         rect.setAttribute('rx', 2 * scale);
         
-        // 전면 표시선 제거 (사용자 요청에 따라 제거)
+        // 락커 문짝 표시선 (평면 모드에서만)
+        if (state.currentViewMode === 'floor') {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', 5);
+            line.setAttribute('y1', 5);
+            line.setAttribute('x2', (width * scale) - 5);
+            line.setAttribute('y2', 5);
+            line.setAttribute('stroke', type.color || '#1e40af');
+            line.setAttribute('stroke-width', '2');
+            line.setAttribute('opacity', '0.6');
+            g.appendChild(line);
+        }
         
         // 락커 번호
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -458,6 +483,14 @@
         canvas.addEventListener('mousemove', handleCanvasMouseMove);
         canvas.addEventListener('mouseup', handleCanvasMouseUp);
         canvas.addEventListener('wheel', handleCanvasWheel);
+        
+        // window 레벨 이벤트 (패닝 등을 위해)
+        window.addEventListener('mouseup', handleCanvasMouseUp);
+        window.addEventListener('mousemove', (e) => {
+            if (state.isPanning) {
+                handleCanvasMouseMove(e);
+            }
+        });
         
         // 모드 전환 버튼
         document.querySelectorAll('[data-view-mode]').forEach(btn => {
@@ -575,6 +608,28 @@
     }
 
     function handleCanvasMouseMove(event) {
+        // 캔버스 패닝 처리
+        if (state.isPanning) {
+            const dx = event.clientX - state.panStartPoint.x;
+            const dy = event.clientY - state.panStartPoint.y;
+            
+            // viewBox 업데이트를 위한 계산
+            const svg = document.getElementById('lockerCanvas');
+            const scale = state.zoomLevel;
+            
+            // 패닝 오프셋 업데이트
+            state.panOffset = {
+                x: state.panStartOffset.x + dx / scale,
+                y: state.panStartOffset.y + dy / scale
+            };
+            
+            // viewBox 업데이트
+            const viewBoxWidth = state.canvasWidth / scale;
+            const viewBoxHeight = state.canvasHeight / scale;
+            svg.setAttribute('viewBox', `${-state.panOffset.x} ${-state.panOffset.y} ${viewBoxWidth} ${viewBoxHeight}`);
+            return;
+        }
+        
         if (!state.isDragging || state.draggedLockers.length === 0) return;
         
         const mousePos = getMousePosition(event);
@@ -615,6 +670,14 @@
     }
 
     async function handleCanvasMouseUp(event) {
+        // 패닝 종료
+        if (state.isPanning) {
+            state.isPanning = false;
+            const svg = document.getElementById('lockerCanvas');
+            svg.style.cursor = 'crosshair';
+            return;
+        }
+        
         if (!state.isDragging) return;
         
         // 드래그가 끝난 락커들 저장
@@ -646,8 +709,21 @@
     }
 
     function handleCanvasMouseDown(event) {
-        // 캔버스 빈 공간 클릭
-        if (event.target.id === 'lockerCanvas') {
+        // 중간 버튼으로 패닝 시작
+        if (event.button === 1) {
+            event.preventDefault();
+            state.isPanning = true;
+            state.panStartPoint = { x: event.clientX, y: event.clientY };
+            state.panStartOffset = { x: state.panOffset.x, y: state.panOffset.y };
+            
+            // 패닝 중 커서 변경
+            const svg = document.getElementById('lockerCanvas');
+            svg.style.cursor = 'grabbing';
+            return;
+        }
+        
+        // 캔버스 빈 공간 클릭 (왼쪽 버튼)
+        if (event.button === 0 && event.target.id === 'lockerCanvas') {
             // 드래그 선택 시작
             const mousePos = getMousePosition(event);
             state.isDragSelecting = true;
