@@ -85,23 +85,23 @@
             
             // 미리 로딩된 데이터를 상태에 설정
             if (window.PreloadedData.lockerZones) {
-                state.zones = window.PreloadedData.lockerZones;
+                state.zones = convertZoneData(window.PreloadedData.lockerZones);
                 renderZoneTabs();
             }
             
             if (window.PreloadedData.lockerTypes) {
-                state.lockerTypes = window.PreloadedData.lockerTypes;
+                state.lockerTypes = convertTypeData(window.PreloadedData.lockerTypes);
                 renderLockerTypes();
             }
             
             if (window.PreloadedData.lockers) {
-                state.lockers = window.PreloadedData.lockers;
+                state.lockers = convertLockerData(window.PreloadedData.lockers);
                 renderLockers();
             }
             
             // 첫 번째 구역을 기본 선택
             if (state.zones.length > 0) {
-                state.selectedZone = state.zones[0].LOCKR_KND_CD;
+                state.selectedZone = state.zones[0].id;
                 switchZone(state.selectedZone);
             }
         } else {
@@ -111,6 +111,47 @@
             loadLockerTypes();
             loadLockers();
         }
+    }
+
+    // ============================================
+    // 데이터 변환 함수 (서버 데이터 → JavaScript 형식)
+    // ============================================
+    function convertZoneData(serverZones) {
+        return serverZones.map(zone => ({
+            id: zone.LOCKR_KND_CD,
+            name: zone.LOCKR_KND_NM,
+            x: zone.X || 0,
+            y: zone.Y || 0,
+            width: zone.WIDTH || 800,
+            height: zone.HEIGHT || 600,
+            color: zone.COLOR || '#e5e7eb',
+            lockerCount: 0 // 추후 계산
+        }));
+    }
+
+    function convertTypeData(serverTypes) {
+        return serverTypes.map(type => ({
+            id: type.LOCKR_TYPE_CD,
+            name: type.LOCKR_TYPE_NM,
+            width: type.WIDTH,
+            height: type.HEIGHT,
+            depth: type.DEPTH,
+            color: type.COLOR
+        }));
+    }
+
+    function convertLockerData(serverLockers) {
+        return serverLockers.map(locker => ({
+            id: locker.LOCKR_CD,
+            typeId: locker.LOCKR_TYPE_CD,
+            zoneId: locker.LOCKR_KND,
+            x: parseInt(locker.X) || 0,
+            y: parseInt(locker.Y) || 0,
+            rotation: parseInt(locker.ROTATION) || 0,
+            status: locker.LOCKR_STAT || '00',
+            number: locker.LOCKR_LABEL || locker.LOCKR_NO || '',
+            label: locker.LOCKR_LABEL || ''
+        }));
     }
 
     async function loadZones() {
@@ -281,7 +322,7 @@
         lockersGroup.id = 'lockersGroup';
         
         // 현재 구역의 락커만 렌더링
-        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone?.id);
+        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
         
         currentLockers.forEach(locker => {
             const lockerElement = createLockerSVG(locker);
@@ -328,19 +369,42 @@
     }
 
     function createLockerSVG(locker) {
-        const type = state.lockerTypes.find(t => t.id === locker.typeId);
-        if (!type) return null;
+        if (!locker) {
+            console.warn('[createLockerSVG] Locker is null/undefined');
+            return null;
+        }
         
-        const scale = state.LOCKER_VISUAL_SCALE;
+        const type = state.lockerTypes.find(t => t.id === locker.typeId);
+        if (!type) {
+            console.warn('[createLockerSVG] Type not found for typeId:', locker.typeId);
+            // 기본 타입 사용
+            const defaultType = { id: 'default', width: 50, height: 60, depth: 50, color: '#cccccc' };
+            return createLockerSVGWithType(locker, defaultType);
+        }
+        
+        return createLockerSVGWithType(locker, type);
+    }
+    
+    function createLockerSVGWithType(locker, type) {
+        const scale = state.LOCKER_VISUAL_SCALE || 1;
+        
+        // 안전한 값 처리
+        const x = parseFloat(locker.x) || 0;
+        const y = parseFloat(locker.y) || 0;
+        const rotation = parseFloat(locker.rotation) || 0;
+        const width = parseFloat(type.width) || 50;
+        const height = parseFloat(type.height) || 60;
+        const depth = parseFloat(type.depth) || 50;
+        
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('data-locker-id', locker.id);
-        g.setAttribute('transform', `translate(${locker.x}, ${locker.y}) rotate(${locker.rotation || 0}, ${(type.width * scale) / 2}, ${(type.depth * scale) / 2})`);
+        g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`);
         g.style.cursor = 'move';
         
         // 락커 사각형
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('width', type.width * scale);
-        rect.setAttribute('height', (state.currentViewMode === 'floor' ? type.depth : type.height) * scale);
+        rect.setAttribute('width', width * scale);
+        rect.setAttribute('height', (state.currentViewMode === 'floor' ? depth : height) * scale);
         rect.setAttribute('fill', type.color ? `${type.color}20` : '#FFFFFF');
         rect.setAttribute('stroke', state.selectedLockerIds.has(locker.id) ? '#0768AE' : '#9ca3af');
         rect.setAttribute('stroke-width', state.selectedLockerIds.has(locker.id) ? '2' : '1');
@@ -350,9 +414,9 @@
         if (state.currentViewMode === 'floor') {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', 5);
-            line.setAttribute('y1', (type.depth * scale) - 3);
-            line.setAttribute('x2', (type.width * scale) - 5);
-            line.setAttribute('y2', (type.depth * scale) - 3);
+            line.setAttribute('y1', (depth * scale) - 3);
+            line.setAttribute('x2', (width * scale) - 5);
+            line.setAttribute('y2', (depth * scale) - 3);
             line.setAttribute('stroke', type.color || '#1e40af');
             line.setAttribute('stroke-width', '3');
             line.setAttribute('opacity', '0.8');
@@ -361,14 +425,14 @@
         
         // 락커 번호
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', (type.width * scale) / 2);
-        text.setAttribute('y', ((state.currentViewMode === 'floor' ? type.depth : type.height) * scale) / 2);
+        text.setAttribute('x', (width * scale) / 2);
+        text.setAttribute('y', ((state.currentViewMode === 'floor' ? depth : height) * scale) / 2);
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('dominant-baseline', 'middle');
         text.setAttribute('fill', '#333');
         text.setAttribute('font-size', '14');
         text.setAttribute('font-weight', 'bold');
-        text.textContent = locker.number || locker.id.split('-')[1];
+        text.textContent = locker.number || (locker.id ? String(locker.id).split('-')[1] : '') || locker.id;
         
         g.appendChild(rect);
         g.appendChild(text);
@@ -1083,7 +1147,6 @@
         selectAllLockers,
         clearSelection,
         saveLayout,
-        copyLockers,
         pasteLockers,
         addLockerByDoubleClick,
         selectZone,
