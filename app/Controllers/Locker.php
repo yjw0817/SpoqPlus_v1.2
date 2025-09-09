@@ -64,9 +64,68 @@ class Locker extends MainTchrController
         $modelLocker = new \App\Models\LockerModel();
         
         // 데이터 설정
-        $data['title'] = '락커 배치 관리';
         $data['companyCode'] = $this->SpoQCahce->getCacheVar('comp_cd') ?? '001';
         $data['officeCode'] = $this->SpoQCahce->getCacheVar('bcoff_cd') ?? '001';
+        
+        // ===========================================================================
+        // 서버 렌더링을 위한 데이터 미리 로딩
+        // ===========================================================================
+        $db = \Config\Database::connect();
+        
+        // 락커 타입 데이터 로딩
+        $builder = $db->table('lockr_types');
+        $builder->where('COMP_CD', $data['companyCode']);
+        $builder->where('BCOFF_CD', $data['officeCode']);
+        $result = $builder->get();
+        $lockerTypes = $result->getResultArray();
+        
+        // API 형식으로 변환
+        $formattedTypes = [];
+        foreach ($lockerTypes as $type) {
+            $formattedTypes[] = [
+                'LOCKR_TYPE_CD' => $type['LOCKR_TYPE_CD'],
+                'LOCKR_TYPE_NM' => $type['LOCKR_TYPE_NM'],
+                'WIDTH' => intval($type['WIDTH']),
+                'HEIGHT' => intval($type['HEIGHT']),
+                'DEPTH' => intval($type['DEPTH']),
+                'COLOR' => $type['COLOR']
+            ];
+        }
+        
+        $data['lockerTypes'] = $formattedTypes;
+        
+        // 락커 구역 데이터 로딩
+        $builder = $db->table('lockr_area');
+        $builder->where('COMP_CD', $data['companyCode']);
+        $builder->where('BCOFF_CD', $data['officeCode']);
+        $result = $builder->get();
+        $lockerZones = $result->getResultArray();
+        
+        // API 형식으로 변환
+        $formattedZones = [];
+        foreach ($lockerZones as $zone) {
+            $formattedZones[] = [
+                'LOCKR_KND_CD' => $zone['LOCKR_KND_CD'],
+                'LOCKR_KND_NM' => $zone['LOCKR_KND_NM'],
+                'X' => intval($zone['X'] ?? 0),
+                'Y' => intval($zone['Y'] ?? 0),
+                'WIDTH' => intval($zone['WIDTH'] ?? 800),
+                'HEIGHT' => intval($zone['HEIGHT'] ?? 600),
+                'COLOR' => $zone['COLOR'] ?? '#e5e7eb'
+            ];
+        }
+        
+        $data['lockerZones'] = $formattedZones;
+        
+        // 락커 데이터 로딩 (모든 락커)
+        $builder = $db->table('lockrs');
+        $builder->where('COMP_CD', $data['companyCode']);
+        $builder->where('BCOFF_CD', $data['officeCode']);
+        $builder->orderBy('LOCKR_CD', 'ASC');
+        $result = $builder->get();
+        $lockers = $result->getResultArray();
+        
+        $data['lockers'] = $lockers;
         
         // ===========================================================================
         // 화면 처리

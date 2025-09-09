@@ -15,7 +15,26 @@ helper('form');
             <div class="panel-body">
                 <!-- 락커 타입 목록 -->
                 <div id="lockerTypeList" class="locker-type-list">
-                    <!-- JavaScript로 동적 생성 -->
+                    <?php if (isset($lockerTypes) && !empty($lockerTypes)): ?>
+                        <?php foreach ($lockerTypes as $type): ?>
+                            <div class="locker-type-item" 
+                                 data-type-id="<?= $type['LOCKR_TYPE_CD'] ?>"
+                                 data-width="<?= $type['WIDTH'] ?>"
+                                 data-height="<?= $type['HEIGHT'] ?>"
+                                 data-depth="<?= $type['DEPTH'] ?>"
+                                 data-color="<?= $type['COLOR'] ?>"
+                                 draggable="true"
+                                 onclick="LockerPlacement.selectLockerType('<?= $type['LOCKR_TYPE_CD'] ?>')">
+                                <div class="type-preview" style="background-color: <?= $type['COLOR'] ?>"></div>
+                                <div class="type-info">
+                                    <div class="type-name"><?= htmlspecialchars($type['LOCKR_TYPE_NM']) ?></div>
+                                    <div class="type-dimensions"><?= $type['WIDTH'] ?>×<?= $type['HEIGHT'] ?>×<?= $type['DEPTH'] ?>cm</div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-muted">등록된 락커 타입이 없습니다.</p>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- 락커 등록 버튼 -->
@@ -51,7 +70,19 @@ helper('form');
                 <!-- 구역 탭 -->
                 <div class="zone-tabs">
                     <div class="tabs-left">
-                        <!-- JavaScript로 동적 생성 -->
+                        <?php if (isset($lockerZones) && !empty($lockerZones)): ?>
+                            <?php foreach ($lockerZones as $index => $zone): ?>
+                                <button class="zone-tab <?= $index === 0 ? 'active' : '' ?>" 
+                                        data-zone-id="<?= $zone['LOCKR_KND_CD'] ?>"
+                                        data-zone-color="<?= $zone['COLOR'] ?>"
+                                        onclick="LockerPlacement.switchZone('<?= $zone['LOCKR_KND_CD'] ?>')">
+                                    <span class="zone-color" style="background-color: <?= $zone['COLOR'] ?>"></span>
+                                    <?= htmlspecialchars($zone['LOCKR_KND_NM']) ?>
+                                </button>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-muted">등록된 구역이 없습니다.</p>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -103,12 +134,12 @@ helper('form');
     </div>
 </div>
 
-<!-- 락커 등록 모달 -->
+<!-- 락커 타입 등록 모달 -->
 <div class="modal fade" id="lockerRegistrationModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">락커 등록</h5>
+                <h5 class="modal-title">락커 타입 등록</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -116,26 +147,26 @@ helper('form');
             <div class="modal-body">
                 <form id="lockerRegistrationForm">
                     <div class="form-group">
-                        <label>락커 이름</label>
-                        <input type="text" class="form-control" id="lockerName" required>
+                        <label>타입 이름</label>
+                        <input type="text" class="form-control" id="lockerTypeName" required>
                     </div>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>너비 (cm)</label>
-                                <input type="number" class="form-control" id="lockerWidth" min="1" value="30" required>
+                                <input type="number" class="form-control" id="lockerWidth" min="1" value="40" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>깊이 (cm)</label>
-                                <input type="number" class="form-control" id="lockerDepth" min="1" value="30" required>
+                                <input type="number" class="form-control" id="lockerDepth" min="1" value="40" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>높이 (cm)</label>
-                                <input type="number" class="form-control" id="lockerHeight" min="1" value="30" required>
+                                <input type="number" class="form-control" id="lockerHeight" min="1" value="40" required>
                             </div>
                         </div>
                     </div>
@@ -147,7 +178,7 @@ helper('form');
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
-                <button type="button" class="btn btn-primary" onclick="registerLocker()">등록</button>
+                <button type="button" class="btn btn-primary" onclick="registerLockerType()">등록</button>
             </div>
         </div>
     </div>
@@ -181,11 +212,63 @@ helper('form');
 
 <script>
 // 모달 관련 함수들
+function openLockerRegistrationModal() {
+    $('#lockerRegistrationModal').modal('show');
+}
+
 function openZoneModal() {
     $('#zoneModal').modal('show');
 }
 
-function addZone() {
+// 락커 타입 등록
+async function registerLockerType() {
+    const name = document.getElementById('lockerTypeName').value;
+    const width = document.getElementById('lockerWidth').value;
+    const depth = document.getElementById('lockerDepth').value;
+    const height = document.getElementById('lockerHeight').value;
+    const color = document.getElementById('lockerColor').value;
+    
+    if (!name) {
+        alert('타입 이름을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        // API를 통해 타입 등록
+        const newType = await window.LockerAPI.addLockerType({
+            name: name,
+            width: width,
+            depth: depth,
+            height: height,
+            color: color
+        });
+        
+        if (newType) {
+            console.log('Locker type registered:', newType);
+            
+            // 타입 목록 새로고침
+            if (window.LockerPlacement) {
+                window.LockerPlacement.loadLockerTypes();
+            }
+            
+            alert('락커 타입이 등록되었습니다.');
+        } else {
+            alert('락커 타입 등록에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Failed to register locker type:', error);
+        alert('락커 타입 등록 중 오류가 발생했습니다.');
+    }
+    
+    // 모달 닫기
+    $('#lockerRegistrationModal').modal('hide');
+    
+    // 폼 리셋
+    document.getElementById('lockerRegistrationForm').reset();
+}
+
+// 구역 추가
+async function addZone() {
     const name = document.getElementById('zoneName').value;
     
     if (!name) {
@@ -193,8 +276,26 @@ function addZone() {
         return;
     }
     
-    // 구역 추가 로직
-    console.log('Adding zone:', name);
+    try {
+        // API를 통해 구역 추가
+        const newZone = await window.LockerAPI.addZone(name);
+        
+        if (newZone) {
+            console.log('Zone added:', newZone);
+            
+            // 구역 목록 새로고침
+            if (window.LockerPlacement) {
+                window.LockerPlacement.loadZones();
+            }
+            
+            alert('구역이 추가되었습니다.');
+        } else {
+            alert('구역 추가에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Failed to add zone:', error);
+        alert('구역 추가 중 오류가 발생했습니다.');
+    }
     
     // 모달 닫기
     $('#zoneModal').modal('hide');
@@ -213,6 +314,15 @@ window.LockerConfig = {
     companyCode: '<?= isset($companyCode) ? $companyCode : '001' ?>',
     officeCode: '<?= isset($officeCode) ? $officeCode : '001' ?>',
 };
+
+// 서버에서 미리 로딩된 데이터
+window.PreloadedData = {
+    lockerTypes: <?= json_encode($lockerTypes ?? []) ?>,
+    lockerZones: <?= json_encode($lockerZones ?? []) ?>,
+    lockers: <?= json_encode($lockers ?? []) ?>
+};
+
+console.log('Preloaded data loaded:', window.PreloadedData);
 </script>
 
 <!-- CSS 파일 추가 -->

@@ -79,12 +79,38 @@
     // 데이터 로드 함수
     // ============================================
     function loadInitialData() {
-        // 구역 로드
-        loadZones();
-        // 락커 타입 로드
-        loadLockerTypes();
-        // 기존 락커 로드
-        loadLockers();
+        // 서버에서 미리 로딩된 데이터가 있으면 사용, 없으면 API 호출
+        if (window.PreloadedData) {
+            console.log('Using preloaded server data for fast loading');
+            
+            // 미리 로딩된 데이터를 상태에 설정
+            if (window.PreloadedData.lockerZones) {
+                state.zones = window.PreloadedData.lockerZones;
+                renderZoneTabs();
+            }
+            
+            if (window.PreloadedData.lockerTypes) {
+                state.lockerTypes = window.PreloadedData.lockerTypes;
+                renderLockerTypes();
+            }
+            
+            if (window.PreloadedData.lockers) {
+                state.lockers = window.PreloadedData.lockers;
+                renderLockers();
+            }
+            
+            // 첫 번째 구역을 기본 선택
+            if (state.zones.length > 0) {
+                state.selectedZone = state.zones[0].LOCKR_KND_CD;
+                switchZone(state.selectedZone);
+            }
+        } else {
+            // 서버 데이터가 없으면 기존 방식으로 API 호출
+            console.log('No preloaded data found, falling back to API calls');
+            loadZones();
+            loadLockerTypes();
+            loadLockers();
+        }
     }
 
     async function loadZones() {
@@ -1022,6 +1048,28 @@
         renderLockers();
     }
 
+    // 레이아웃 저장
+    async function saveLayout() {
+        try {
+            console.log('[Layout] Saving...', state.lockers.length, 'lockers');
+            
+            // 모든 락커 저장
+            const savePromises = state.lockers.map(locker => 
+                window.LockerAPI.saveLocker(locker)
+            );
+            
+            const results = await Promise.all(savePromises);
+            console.log('[Layout] Saved successfully:', results.length, 'lockers');
+            alert('레이아웃이 저장되었습니다.');
+            
+            return true;
+        } catch (error) {
+            console.error('[Layout] Save failed:', error);
+            alert('레이아웃 저장에 실패했습니다.');
+            return false;
+        }
+    }
+
     // 전역 함수 노출
     window.LockerPlacement = {
         state,
@@ -1034,10 +1082,14 @@
         rotateSelectedLockers,
         selectAllLockers,
         clearSelection,
-        saveLayout: function() {
-            console.log('Saving layout...', state.lockers);
-            // API 호출 로직
-        }
+        saveLayout,
+        copyLockers,
+        pasteLockers,
+        addLockerByDoubleClick,
+        selectZone,
+        loadLockers,
+        loadZones,
+        loadLockerTypes
     };
 
 })();

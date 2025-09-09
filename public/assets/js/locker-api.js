@@ -184,6 +184,38 @@
             }
         },
 
+        // 락커 타입 추가
+        addLockerType: async function(typeData) {
+            try {
+                const response = await fetch(`${this.getApiUrl()}/locker/ajax_add_locker_type`, {
+                    method: 'POST',
+                    headers: this.getCsrfHeaders(),
+                    body: JSON.stringify(typeData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return {
+                        id: data.type.LOCKR_TYPE_CD,
+                        name: data.type.LOCKR_TYPE_NM,
+                        width: parseInt(data.type.WIDTH),
+                        height: parseInt(data.type.HEIGHT),
+                        depth: parseInt(data.type.DEPTH),
+                        color: data.type.COLOR
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error('[API] Failed to add locker type:', error);
+                return null;
+            }
+        },
+
         // 구역 추가
         addZone: async function(zoneName, color) {
             try {

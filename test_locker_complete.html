@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>락커 배치 시스템 통합 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4A90E2;
+            padding-bottom: 10px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-section {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #4A90E2;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: white;
+            border-left: 3px solid #4A90E2;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .success {
+            border-left-color: #5cb85c;
+            background-color: #f0fff0;
+        }
+        .error {
+            border-left-color: #d9534f;
+            background-color: #fff0f0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-success {
+            background-color: #5cb85c;
+        }
+        .status-error {
+            background-color: #d9534f;
+        }
+        .status-warning {
+            background-color: #f0ad4e;
+        }
+        .summary {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 락커 배치 시스템 통합 테스트</h1>
+        
+        <!-- 전체 테스트 요약 -->
+        <div class="summary">
+            <h3>테스트 상태</h3>
+            <p><span class="status-indicator status-success"></span> API 연결: <span id="apiStatus">검사 중...</span></p>
+            <p><span class="status-indicator status-success"></span> LockerPlacement 로드: <span id="placementStatus">검사 중...</span></p>
+            <p><span class="status-indicator status-success"></span> 데이터베이스 연결: <span id="dbStatus">검사 중...</span></p>
+        </div>
+
+        <div class="test-grid">
+            <!-- 락커 타입 테스트 -->
+            <div class="test-section">
+                <h3>📦 락커 타입 관리</h3>
+                <button onclick="testLoadTypes()">타입 목록 조회</button>
+                <button onclick="testAddType()">새 타입 추가</button>
+                <button onclick="refreshTypes()">목록 새로고침</button>
+                <div id="typesResult" class="result"></div>
+            </div>
+
+            <!-- 구역 테스트 -->
+            <div class="test-section">
+                <h3>🗺️ 구역 관리</h3>
+                <button onclick="testLoadZones()">구역 목록 조회</button>
+                <button onclick="testAddZone()">새 구역 추가</button>
+                <button onclick="refreshZones()">목록 새로고침</button>
+                <div id="zonesResult" class="result"></div>
+            </div>
+
+            <!-- 락커 테스트 -->
+            <div class="test-section">
+                <h3>🔐 락커 관리</h3>
+                <button onclick="testLoadLockers()">락커 목록 조회</button>
+                <button onclick="testAddLocker()">새 락커 추가</button>
+                <button onclick="testSaveLayout()">레이아웃 저장</button>
+                <div id="lockersResult" class="result"></div>
+            </div>
+
+            <!-- LockerPlacement 통합 테스트 -->
+            <div class="test-section">
+                <h3>🎯 LockerPlacement 통합</h3>
+                <button onclick="testPlacementIntegration()">통합 기능 테스트</button>
+                <button onclick="testPlacementMethods()">메서드 확인</button>
+                <button onclick="testStateSync()">상태 동기화 확인</button>
+                <div id="integrationResult" class="result"></div>
+            </div>
+        </div>
+
+        <!-- 전체 시스템 테스트 -->
+        <div style="margin-top: 30px;">
+            <h3>🔧 전체 시스템 테스트</h3>
+            <button onclick="runCompleteTest()" style="background-color: #5cb85c; font-size: 16px; padding: 12px 24px;">
+                전체 시스템 검증 실행
+            </button>
+            <div id="completeTestResult" class="result" style="margin-top: 20px; min-height: 100px;"></div>
+        </div>
+    </div>
+
+    <!-- LockerConfig 설정 -->
+    <script>
+        window.LockerConfig = {
+            baseUrl: '/SpoqPlus_Color_Admin_Except_Mobile_claude2',
+            csrfHeader: 'X-CSRF-TOKEN',
+            csrfHash: 'test-csrf-token',
+            companyCode: '001',
+            officeCode: '001'
+        };
+    </script>
+
+    <!-- API 및 LockerPlacement 로드 -->
+    <script src="assets/js/locker-api.js"></script>
+    <script src="assets/js/locker-placement-enhanced.js"></script>
+
+    <script>
+        // 초기 상태 확인
+        window.addEventListener('load', function() {
+            // API 상태 확인
+            document.getElementById('apiStatus').textContent = 
+                window.LockerAPI ? '✓ 로드됨' : '✗ 실패';
+            
+            // LockerPlacement 상태 확인
+            document.getElementById('placementStatus').textContent = 
+                window.LockerPlacement ? '✓ 로드됨' : '✗ 실패';
+            
+            // 데이터베이스 연결 확인 (간접적)
+            if (window.LockerAPI) {
+                window.LockerAPI.getLockerTypes().then(types => {
+                    document.getElementById('dbStatus').textContent = '✓ 연결됨';
+                }).catch(err => {
+                    document.getElementById('dbStatus').textContent = '✗ 연결 실패';
+                });
+            }
+        });
+
+        function showResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + (isSuccess ? 'success' : 'error');
+            element.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+        }
+
+        // 락커 타입 테스트
+        async function testLoadTypes() {
+            try {
+                const types = await window.LockerAPI.getLockerTypes();
+                showResult('typesResult', {
+                    message: '타입 조회 성공',
+                    count: types.length,
+                    types: types
+                });
+            } catch (error) {
+                showResult('typesResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function testAddType() {
+            try {
+                const newType = await window.LockerAPI.addLockerType({
+                    name: '테스트 타입 ' + Date.now(),
+                    width: 45,
+                    height: 45,
+                    depth: 45,
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16)
+                });
+                
+                if (newType) {
+                    showResult('typesResult', {
+                        message: '타입 추가 성공',
+                        type: newType
+                    });
+                } else {
+                    showResult('typesResult', '타입 추가 실패', false);
+                }
+            } catch (error) {
+                showResult('typesResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function refreshTypes() {
+            if (window.LockerPlacement) {
+                await window.LockerPlacement.loadLockerTypes();
+                showResult('typesResult', 'LockerPlacement.loadLockerTypes() 실행 완료');
+            }
+        }
+
+        // 구역 테스트
+        async function testLoadZones() {
+            try {
+                const zones = await window.LockerAPI.getZones();
+                showResult('zonesResult', {
+                    message: '구역 조회 성공',
+                    count: zones.length,
+                    zones: zones
+                });
+            } catch (error) {
+                showResult('zonesResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function testAddZone() {
+            try {
+                const zoneName = '테스트 구역 ' + Date.now();
+                const newZone = await window.LockerAPI.addZone(zoneName);
+                
+                if (newZone) {
+                    showResult('zonesResult', {
+                        message: '구역 추가 성공',
+                        zone: newZone
+                    });
+                } else {
+                    showResult('zonesResult', '구역 추가 실패', false);
+                }
+            } catch (error) {
+                showResult('zonesResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function refreshZones() {
+            if (window.LockerPlacement) {
+                await window.LockerPlacement.loadZones();
+                showResult('zonesResult', 'LockerPlacement.loadZones() 실행 완료');
+            }
+        }
+
+        // 락커 테스트
+        async function testLoadLockers() {
+            try {
+                const lockers = await window.LockerAPI.getLockers('001', '001');
+                showResult('lockersResult', {
+                    message: '락커 조회 성공',
+                    count: lockers.length,
+                    lockers: lockers.slice(0, 5) // 처음 5개만 표시
+                });
+            } catch (error) {
+                showResult('lockersResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function testAddLocker() {
+            try {
+                const zones = await window.LockerAPI.getZones();
+                if (zones.length === 0) {
+                    showResult('lockersResult', '구역이 없습니다. 먼저 구역을 추가하세요.', false);
+                    return;
+                }
+
+                const newLocker = await window.LockerAPI.saveLocker({
+                    typeId: '1',
+                    x: Math.floor(Math.random() * 400),
+                    y: Math.floor(Math.random() * 400),
+                    rotation: 0,
+                    zoneId: zones[0].id,
+                    number: 'TEST-' + Date.now(),
+                    status: 'available'
+                });
+                
+                if (newLocker) {
+                    showResult('lockersResult', {
+                        message: '락커 추가 성공',
+                        locker: newLocker
+                    });
+                } else {
+                    showResult('lockersResult', '락커 추가 실패', false);
+                }
+            } catch (error) {
+                showResult('lockersResult', '오류: ' + error.message, false);
+            }
+        }
+
+        async function testSaveLayout() {
+            if (window.LockerPlacement && window.LockerPlacement.saveLayout) {
+                const result = await window.LockerPlacement.saveLayout();
+                showResult('lockersResult', result ? '레이아웃 저장 성공' : '레이아웃 저장 실패', result);
+            } else {
+                showResult('lockersResult', 'saveLayout 메서드를 찾을 수 없습니다.', false);
+            }
+        }
+
+        // LockerPlacement 통합 테스트
+        function testPlacementIntegration() {
+            if (!window.LockerPlacement) {
+                showResult('integrationResult', 'LockerPlacement가 로드되지 않았습니다.', false);
+                return;
+            }
+
+            const state = window.LockerPlacement.state;
+            showResult('integrationResult', {
+                message: 'LockerPlacement 상태',
+                lockerTypes: state.lockerTypes.length + '개',
+                zones: state.zones.length + '개',
+                lockers: state.lockers.length + '개',
+                selectedZone: state.selectedZone?.name || '없음',
+                viewMode: state.currentViewMode
+            });
+        }
+
+        function testPlacementMethods() {
+            if (!window.LockerPlacement) {
+                showResult('integrationResult', 'LockerPlacement가 로드되지 않았습니다.', false);
+                return;
+            }
+
+            const methods = Object.keys(window.LockerPlacement).filter(key => typeof window.LockerPlacement[key] === 'function');
+            showResult('integrationResult', {
+                message: '사용 가능한 메서드',
+                count: methods.length,
+                methods: methods
+            });
+        }
+
+        async function testStateSync() {
+            if (!window.LockerPlacement) {
+                showResult('integrationResult', 'LockerPlacement가 로드되지 않았습니다.', false);
+                return;
+            }
+
+            // 데이터 새로고침
+            await window.LockerPlacement.loadZones();
+            await window.LockerPlacement.loadLockerTypes();
+            
+            const state = window.LockerPlacement.state;
+            showResult('integrationResult', {
+                message: '상태 동기화 완료',
+                zonesLoaded: state.zones.length > 0,
+                typesLoaded: state.lockerTypes.length > 0,
+                lockersLoaded: state.lockers.length >= 0
+            });
+        }
+
+        // 전체 시스템 테스트
+        async function runCompleteTest() {
+            const results = [];
+            const resultElement = document.getElementById('completeTestResult');
+            resultElement.textContent = '테스트 실행 중...\n';
+
+            try {
+                // 1. API 확인
+                results.push({
+                    test: 'API 로드',
+                    status: window.LockerAPI ? 'PASS' : 'FAIL'
+                });
+
+                // 2. LockerPlacement 확인
+                results.push({
+                    test: 'LockerPlacement 로드',
+                    status: window.LockerPlacement ? 'PASS' : 'FAIL'
+                });
+
+                // 3. 타입 조회
+                const types = await window.LockerAPI.getLockerTypes();
+                results.push({
+                    test: '락커 타입 조회',
+                    status: types.length > 0 ? 'PASS' : 'WARN',
+                    count: types.length
+                });
+
+                // 4. 구역 조회
+                const zones = await window.LockerAPI.getZones();
+                results.push({
+                    test: '구역 목록 조회',
+                    status: zones.length > 0 ? 'PASS' : 'WARN',
+                    count: zones.length
+                });
+
+                // 5. 락커 조회
+                const lockers = await window.LockerAPI.getLockers('001', '001');
+                results.push({
+                    test: '락커 목록 조회',
+                    status: 'PASS',
+                    count: lockers.length
+                });
+
+                // 6. LockerPlacement 메서드 확인
+                const requiredMethods = ['loadZones', 'loadLockerTypes', 'loadLockers', 'saveLayout'];
+                const missingMethods = requiredMethods.filter(m => !window.LockerPlacement[m]);
+                results.push({
+                    test: 'LockerPlacement 메서드',
+                    status: missingMethods.length === 0 ? 'PASS' : 'FAIL',
+                    missing: missingMethods
+                });
+
+                // 7. 상태 동기화
+                await window.LockerPlacement.loadZones();
+                await window.LockerPlacement.loadLockerTypes();
+                const state = window.LockerPlacement.state;
+                results.push({
+                    test: '상태 동기화',
+                    status: (state.zones.length > 0 || state.lockerTypes.length > 0) ? 'PASS' : 'WARN'
+                });
+
+                // 결과 표시
+                const allPassed = results.every(r => r.status === 'PASS');
+                const hasWarnings = results.some(r => r.status === 'WARN');
+                
+                resultElement.className = 'result ' + (allPassed ? 'success' : (hasWarnings ? '' : 'error'));
+                resultElement.textContent = JSON.stringify({
+                    overall: allPassed ? '✅ 모든 테스트 통과' : (hasWarnings ? '⚠️ 경고 있음' : '❌ 일부 테스트 실패'),
+                    timestamp: new Date().toISOString(),
+                    results: results
+                }, null, 2);
+
+            } catch (error) {
+                resultElement.className = 'result error';
+                resultElement.textContent = '테스트 실행 중 오류:\n' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
