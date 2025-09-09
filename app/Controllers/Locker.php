@@ -82,19 +82,12 @@ class Locker extends MainTchrController
         
         // 데이터가 없으면 테스트 데이터 생성
         if (empty($data['lockerTypes']) || empty($data['lockerZones'])) {
-            log_message('info', '[locker_placement] No data found, creating test data...');
             $modelLocker->createTestData($data['companyCode'], $data['officeCode']);
             
             // 다시 데이터 로딩
             $data['lockerTypes'] = $modelLocker->getLockerTypes($data['companyCode'], $data['officeCode']);
             $data['lockerZones'] = $modelLocker->getLockerZones($data['companyCode'], $data['officeCode']);
         }
-        
-        // 디버깅 로그 추가
-        log_message('info', '[locker_placement] Company: ' . $data['companyCode'] . ', Office: ' . $data['officeCode']);
-        log_message('info', '[locker_placement] Locker Types Count: ' . count($data['lockerTypes']));
-        log_message('info', '[locker_placement] Locker Zones Count: ' . count($data['lockerZones']));
-        log_message('info', '[locker_placement] Lockers Count: ' . count($data['lockers']));
         
         // ===========================================================================
         // 화면 처리
