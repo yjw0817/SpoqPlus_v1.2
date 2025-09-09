@@ -513,6 +513,27 @@
 #modal_mem_insert_form.show .modal-dialog {
     transform: none;
 }
+
+/* app-content의 높이를 auto로 변경하고 min-height 사용 */
+.app-content {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(100vh - 65px) !important;
+    height: auto !important; /* 고정 높이 제거 */
+    overflow-y: visible !important; /* 스크롤을 visible로 변경 */
+
+/* content-wrapper가 footer를 밀어내도록 설정 */
+.content-wrapper {
+    flex: 1 !important;
+    min-height: 100% !important;
+}
+
+/* footer를 하단에 고정하되 콘텐츠에 따라 밀려나도록 */
+.main-footer {
+    margin-top: auto !important;
+    flex-shrink: 0 !important;
+}
 </style>
 
 <div class="modal fade" id="modal_mem_insert_form">
@@ -1633,4 +1654,6 @@ var ToastConfirm = Swal.mixin({
 		var sname = $('#search_mem_nm1').val();
 		ff_tsearch(sname);
 	});
+
+	
 </script>

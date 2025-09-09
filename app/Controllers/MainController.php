@@ -414,7 +414,7 @@ class MainController extends Controller
 		// $output .= view($viewUrl, $data['view']);
 		// $output .= view('inc/footer', $data['footer']); // 푸터
 		
-		echo view('/inc/contentTitle', $data['contentTitle']); // 컨텐츠 상단의 타이틀 및 네비게이션바
+		echo view('inc/contentTitle', $data['contentTitle']); // 컨텐츠 상단의 타이틀 및 네비게이션바
 		echo view($viewUrl, $data['view']); // 컨텐츠 페이지
 		echo view('inc/footer', $data['footer']); // 푸터
 	}
