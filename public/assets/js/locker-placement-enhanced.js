@@ -101,8 +101,8 @@
             
             // 첫 번째 구역을 기본 선택
             if (state.zones.length > 0) {
-                state.selectedZone = state.zones[0].id;
-                switchZone(state.selectedZone);
+                console.log('[Enhanced] Auto-selecting first zone:', state.zones[0]);
+                switchZone(state.zones[0].id);
             }
         } else {
             // 서버 데이터가 없으면 기존 방식으로 API 호출
@@ -174,7 +174,8 @@
         
         // 첫 번째 구역 선택
         if (state.zones.length > 0) {
-            selectZone(state.zones[0]);
+            console.log('[Enhanced] Auto-selecting first zone (fallback):', state.zones[0]);
+            switchZone(state.zones[0].id);
         }
     }
 
@@ -212,18 +213,19 @@
             // API에서 락커 데이터 로드
             const compCd = window.LockerConfig?.companyCode || '001';
             const bcoffCd = window.LockerConfig?.officeCode || '001';
-            const lockers = await window.LockerAPI.getLockers(compCd, bcoffCd, state.selectedZone.id);
+            const lockers = await window.LockerAPI.getLockers(compCd, bcoffCd, state.selectedZone);
             
             // API 응답 데이터를 앱 형식으로 변환 (이미 변환된 상태로 반환됨)
-            state.lockers = lockers.filter(locker => locker.zoneId === state.selectedZone.id);
-            console.log('[Enhanced] Loaded lockers for zone:', state.selectedZone.id, state.lockers);
+            state.lockers = lockers.filter(locker => locker.zoneId === state.selectedZone);
+            console.log('[Enhanced] Loaded lockers for zone:', state.selectedZone, state.lockers);
         } catch (error) {
             console.error('[Enhanced] Failed to load lockers:', error);
-            // 폴백: 더미 데이터 사용
+            // 폴백: 더미 데이터 사용 (state.selectedZone은 이제 ID 문자열)
+            const currentZoneId = state.selectedZone || (state.zones.length > 0 ? state.zones[0].id : 'zone-1');
             state.lockers = [
-                { id: 'locker-1', typeId: 1, x: 100, y: 100, rotation: 0, zoneId: state.selectedZone.id, number: 'A001' },
-                { id: 'locker-2', typeId: 2, x: 200, y: 100, rotation: 0, zoneId: state.selectedZone.id, number: 'A002' },
-                { id: 'locker-3', typeId: 1, x: 300, y: 100, rotation: 90, zoneId: state.selectedZone.id, number: 'A003' }
+                { id: 'locker-1', typeId: 1, x: 100, y: 100, rotation: 0, zoneId: currentZoneId, number: 'A001' },
+                { id: 'locker-2', typeId: 2, x: 200, y: 100, rotation: 0, zoneId: currentZoneId, number: 'A002' },
+                { id: 'locker-3', typeId: 1, x: 300, y: 100, rotation: 90, zoneId: currentZoneId, number: 'A003' }
             ];
         }
         
@@ -243,7 +245,8 @@
             const tab = document.createElement('button');
             tab.className = 'zone-tab';
             tab.textContent = zone.name;
-            if (state.selectedZone?.id === zone.id) {
+            // state.selectedZone은 이제 ID 문자열입니다
+            if (state.selectedZone === zone.id) {
                 tab.classList.add('active');
             }
             tab.onclick = () => selectZone(zone);
@@ -311,6 +314,9 @@
         const svg = document.getElementById('lockerCanvas');
         if (!svg) return;
         
+        console.log('[Enhanced] Rendering lockers for zone:', state.selectedZone);
+        console.log('[Enhanced] Available lockers:', state.lockers.length);
+        
         // 기존 락커 그룹 제거
         let lockersGroup = svg.querySelector('#lockersGroup');
         if (lockersGroup) {
@@ -321,12 +327,15 @@
         lockersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         lockersGroup.id = 'lockersGroup';
         
-        // 현재 구역의 락커만 렌더링
+        // 현재 구역의 락커만 렌더링 (state.selectedZone은 ID 문자열)
         const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
+        console.log('[Enhanced] Lockers for current zone:', currentLockers.length);
         
         currentLockers.forEach(locker => {
             const lockerElement = createLockerSVG(locker);
-            lockersGroup.appendChild(lockerElement);
+            if (lockerElement) {
+                lockersGroup.appendChild(lockerElement);
+            }
         });
         
         svg.appendChild(lockersGroup);
@@ -1036,9 +1045,23 @@
     }
 
     function selectZone(zone) {
-        state.selectedZone = zone;
+        console.log('[Enhanced] Selecting zone:', zone);
+        // zone이 객체면 id 사용, 문자열이면 그대로 사용
+        state.selectedZone = typeof zone === 'object' ? zone.id : zone;
         renderZoneTabs();
-        loadLockers();
+        renderLockers(); // loadLockers 대신 직접 renderLockers 호출
+    }
+    
+    // View에서 호출되는 switchZone 함수 (zone ID를 받음)
+    function switchZone(zoneId) {
+        console.log('[Enhanced] Switching to zone ID:', zoneId);
+        state.selectedZone = zoneId;
+        
+        // 해당 구역의 탭을 활성화
+        renderZoneTabs();
+        
+        // 해당 구역의 락커들을 렌더링
+        renderLockers();
     }
 
     function generateLockerNumber() {
@@ -1150,6 +1173,7 @@
         pasteLockers,
         addLockerByDoubleClick,
         selectZone,
+        switchZone,
         loadLockers,
         loadZones,
         loadLockerTypes
