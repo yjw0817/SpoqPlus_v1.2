@@ -73,9 +73,6 @@ console.log('[Locker4] Configuration loaded:', window.LockerConfig);
 <!-- Debug Info for Development -->
 <?php if(ENVIRONMENT === 'development'): ?>
 <script>
-console.log('[Locker4 Debug] Page loaded');
-console.log('[Locker4 Debug] Base URL:', '<?= base_url() ?>');
-console.log('[Locker4 Debug] Assets URL:', '<?= base_url('assets/locker4/') ?>');
 
 // Check if Vue app mounts after page load
 window.addEventListener('DOMContentLoaded', () => {
