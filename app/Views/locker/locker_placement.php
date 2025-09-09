@@ -323,6 +323,14 @@ window.PreloadedData = {
 };
 
 console.log('Preloaded data loaded:', window.PreloadedData);
+console.log('Locker Types count:', window.PreloadedData.lockerTypes.length);
+console.log('Locker Zones count:', window.PreloadedData.lockerZones.length);
+console.log('Lockers count:', window.PreloadedData.lockers.length);
+
+// PHP 변수 확인
+console.log('PHP lockerTypes:', <?= json_encode(isset($lockerTypes) ? count($lockerTypes) : 'not set') ?>);
+console.log('PHP lockerZones:', <?= json_encode(isset($lockerZones) ? count($lockerZones) : 'not set') ?>);
+console.log('PHP lockers:', <?= json_encode(isset($lockers) ? count($lockers) : 'not set') ?>);
 </script>
 
 <!-- CSS 파일 추가 -->

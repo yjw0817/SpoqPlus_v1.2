@@ -268,27 +268,34 @@ class LockerModel extends Model
      */
     public function getLockerTypes($comp_cd = '001', $bcoff_cd = '001')
     {
-        $builder = $this->db->table('lockr_types');
-        $builder->where('COMP_CD', $comp_cd);
-        $builder->where('BCOFF_CD', $bcoff_cd);
-        
-        $result = $builder->get();
-        $types = $result->getResultArray();
-        
-        // API 형식으로 변환
-        $formattedTypes = [];
-        foreach ($types as $type) {
-            $formattedTypes[] = [
-                'LOCKR_TYPE_CD' => $type['LOCKR_TYPE_CD'],
-                'LOCKR_TYPE_NM' => $type['LOCKR_TYPE_NM'],
-                'WIDTH' => intval($type['WIDTH']),
-                'HEIGHT' => intval($type['HEIGHT']),
-                'DEPTH' => intval($type['DEPTH']),
-                'COLOR' => $type['COLOR']
-            ];
+        try {
+            $builder = $this->db->table('lockr_types');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
+            
+            $result = $builder->get();
+            $types = $result->getResultArray();
+            
+            log_message('info', '[LockerModel::getLockerTypes] Found ' . count($types) . ' types for COMP_CD=' . $comp_cd . ', BCOFF_CD=' . $bcoff_cd);
+            
+            // API 형식으로 변환
+            $formattedTypes = [];
+            foreach ($types as $type) {
+                $formattedTypes[] = [
+                    'LOCKR_TYPE_CD' => $type['LOCKR_TYPE_CD'],
+                    'LOCKR_TYPE_NM' => $type['LOCKR_TYPE_NM'],
+                    'WIDTH' => intval($type['WIDTH']),
+                    'HEIGHT' => intval($type['HEIGHT']),
+                    'DEPTH' => intval($type['DEPTH']),
+                    'COLOR' => $type['COLOR']
+                ];
+            }
+            
+            return $formattedTypes;
+        } catch (\Exception $e) {
+            log_message('error', '[LockerModel::getLockerTypes] Error: ' . $e->getMessage());
+            return [];
         }
-        
-        return $formattedTypes;
     }
 
     /**
@@ -296,28 +303,35 @@ class LockerModel extends Model
      */
     public function getLockerZones($comp_cd = '001', $bcoff_cd = '001')
     {
-        $builder = $this->db->table('lockr_area');
-        $builder->where('COMP_CD', $comp_cd);
-        $builder->where('BCOFF_CD', $bcoff_cd);
-        
-        $result = $builder->get();
-        $zones = $result->getResultArray();
-        
-        // API 형식으로 변환
-        $formattedZones = [];
-        foreach ($zones as $zone) {
-            $formattedZones[] = [
-                'LOCKR_KND_CD' => $zone['LOCKR_KND_CD'],
-                'LOCKR_KND_NM' => $zone['LOCKR_KND_NM'],
-                'X' => intval($zone['X'] ?? 0),
-                'Y' => intval($zone['Y'] ?? 0),
-                'WIDTH' => intval($zone['WIDTH'] ?? 800),
-                'HEIGHT' => intval($zone['HEIGHT'] ?? 600),
-                'COLOR' => $zone['COLOR'] ?? '#e5e7eb'
-            ];
+        try {
+            $builder = $this->db->table('lockr_area');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
+            
+            $result = $builder->get();
+            $zones = $result->getResultArray();
+            
+            log_message('info', '[LockerModel::getLockerZones] Found ' . count($zones) . ' zones for COMP_CD=' . $comp_cd . ', BCOFF_CD=' . $bcoff_cd);
+            
+            // API 형식으로 변환
+            $formattedZones = [];
+            foreach ($zones as $zone) {
+                $formattedZones[] = [
+                    'LOCKR_KND_CD' => $zone['LOCKR_KND_CD'],
+                    'LOCKR_KND_NM' => $zone['LOCKR_KND_NM'],
+                    'X' => intval($zone['X'] ?? 0),
+                    'Y' => intval($zone['Y'] ?? 0),
+                    'WIDTH' => intval($zone['WIDTH'] ?? 800),
+                    'HEIGHT' => intval($zone['HEIGHT'] ?? 600),
+                    'COLOR' => $zone['COLOR'] ?? '#e5e7eb'
+                ];
+            }
+            
+            return $formattedZones;
+        } catch (\Exception $e) {
+            log_message('error', '[LockerModel::getLockerZones] Error: ' . $e->getMessage());
+            return [];
         }
-        
-        return $formattedZones;
     }
 
     /**
@@ -325,17 +339,72 @@ class LockerModel extends Model
      */
     public function getLockers($comp_cd = '001', $bcoff_cd = '001', $zone_id = null)
     {
-        $builder = $this->db->table('lockrs');
-        $builder->where('COMP_CD', $comp_cd);
-        $builder->where('BCOFF_CD', $bcoff_cd);
-        
-        if ($zone_id) {
-            $builder->where('LOCKR_KND', $zone_id);
+        try {
+            $builder = $this->db->table('lockrs');
+            $builder->where('COMP_CD', $comp_cd);
+            $builder->where('BCOFF_CD', $bcoff_cd);
+            
+            if ($zone_id) {
+                $builder->where('LOCKR_KND', $zone_id);
+            }
+            
+            $builder->orderBy('LOCKR_CD', 'ASC');
+            
+            $result = $builder->get();
+            $lockers = $result->getResultArray();
+            
+            log_message('info', '[LockerModel::getLockers] Found ' . count($lockers) . ' lockers for COMP_CD=' . $comp_cd . ', BCOFF_CD=' . $bcoff_cd . ($zone_id ? ', ZONE=' . $zone_id : ''));
+            
+            return $lockers;
+        } catch (\Exception $e) {
+            log_message('error', '[LockerModel::getLockers] Error: ' . $e->getMessage());
+            return [];
         }
-        
-        $builder->orderBy('LOCKR_CD', 'ASC');
-        
-        $result = $builder->get();
-        return $result->getResultArray();
+    }
+
+    /**
+     * 테스트용 기본 데이터 생성
+     */
+    public function createTestData($comp_cd = '001', $bcoff_cd = '001')
+    {
+        try {
+            // 락커 타입 테스트 데이터
+            $testTypes = [
+                ['LOCKR_TYPE_CD' => '1', 'LOCKR_TYPE_NM' => '소형', 'WIDTH' => 40, 'HEIGHT' => 40, 'DEPTH' => 40, 'COLOR' => '#3b82f6', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd],
+                ['LOCKR_TYPE_CD' => '2', 'LOCKR_TYPE_NM' => '중형', 'WIDTH' => 50, 'HEIGHT' => 60, 'DEPTH' => 50, 'COLOR' => '#10b981', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd],
+                ['LOCKR_TYPE_CD' => '3', 'LOCKR_TYPE_NM' => '대형', 'WIDTH' => 60, 'HEIGHT' => 80, 'DEPTH' => 60, 'COLOR' => '#f59e0b', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd]
+            ];
+
+            // 락커 구역 테스트 데이터
+            $testZones = [
+                ['LOCKR_KND_CD' => 'zone-1', 'LOCKR_KND_NM' => 'A구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#f0f9ff', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd],
+                ['LOCKR_KND_CD' => 'zone-2', 'LOCKR_KND_NM' => 'B구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fef3c7', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd],
+                ['LOCKR_KND_CD' => 'zone-3', 'LOCKR_KND_NM' => 'C구역', 'X' => 0, 'Y' => 0, 'WIDTH' => 800, 'HEIGHT' => 600, 'COLOR' => '#fee2e2', 'COMP_CD' => $comp_cd, 'BCOFF_CD' => $bcoff_cd]
+            ];
+
+            // 기존 데이터 확인 후 없으면 삽입
+            $typesBuilder = $this->db->table('lockr_types');
+            $typesBuilder->where('COMP_CD', $comp_cd)->where('BCOFF_CD', $bcoff_cd);
+            $existingTypes = $typesBuilder->countAllResults();
+
+            if ($existingTypes == 0) {
+                $this->db->table('lockr_types')->insertBatch($testTypes);
+                log_message('info', '[LockerModel::createTestData] Inserted test locker types');
+            }
+
+            $zonesBuilder = $this->db->table('lockr_area');
+            $zonesBuilder->where('COMP_CD', $comp_cd)->where('BCOFF_CD', $bcoff_cd);
+            $existingZones = $zonesBuilder->countAllResults();
+
+            if ($existingZones == 0) {
+                $this->db->table('lockr_area')->insertBatch($testZones);
+                log_message('info', '[LockerModel::createTestData] Inserted test locker zones');
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            log_message('error', '[LockerModel::createTestData] Error: ' . $e->getMessage());
+            return false;
+        }
     }
 } 
