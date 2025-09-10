@@ -431,6 +431,21 @@
         g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`);
         g.style.cursor = 'move';
         
+        // 부드러운 이동 애니메이션 (드래그 중이 아닐 때만)
+        if (!state.isDragging || !state.draggedLockers.find(d => d.id === locker.id)) {
+            g.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
+        } else {
+            g.style.transition = 'none';
+        }
+        
+        // 새로 추가된 락커에 페이드인 효과
+        if (locker.isNew) {
+            g.style.opacity = '0';
+            setTimeout(() => {
+                g.style.opacity = '1';
+            }, 10);
+        }
+        
         // 락커 사각형 (Locker4 스타일)
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', state.currentViewMode === 'front' ? 0 : 1);
@@ -623,6 +638,9 @@
             y: mousePos.y - locker.y
         };
         
+        // 드래그 시작 시 애니메이션 일시적으로 비활성화
+        renderLockers();
+        
         // 드래그할 락커들 설정
         state.draggedLockers = [];
         state.selectedLockerIds.forEach(id => {
@@ -711,7 +729,7 @@
         const hasCollision = checkCollisionForLocker(snappedX, snappedY, leaderLocker, leaderLocker.rotation || 0);
         
         if (!hasCollision) {
-            // 모든 선택된 락커 이동
+            // 모든 선택된 락커 이동 (드래그 중이므로 즉시 이동)
             state.draggedLockers.forEach(dragInfo => {
                 const locker = state.lockers.find(l => l.id === dragInfo.id);
                 if (locker) {
@@ -752,10 +770,15 @@
         
         state.isDragging = false;
         state.showSelectionUI = true;
-        state.draggedLockers = [];
         
         // 정렬 가이드 숨기기
         hideAlignmentGuides();
+        
+        // 드래그가 끝난 후 애니메이션 재활성화하여 부드럽게 최종 위치로 이동
+        setTimeout(() => {
+            state.draggedLockers = [];
+            renderLockers();
+        }, 10);
         
         // 선택 UI 업데이트
         updateSelectionUI();
@@ -1401,6 +1424,9 @@
     function rotateSelectedLockers() {
         if (state.selectedLockerIds.size === 0) return;
         
+        // 회전 애니메이션을 위한 플래그
+        state.isRotating = true;
+        
         // 45도씩 회전
         state.selectedLockerIds.forEach(id => {
             const locker = state.lockers.find(l => l.id === id);
@@ -1415,7 +1441,13 @@
                 }
             }
         });
+        
         renderLockers();
+        
+        // 회전 애니메이션 완료 후 플래그 해제
+        setTimeout(() => {
+            state.isRotating = false;
+        }, 300);
     }
 
     function deleteLockerType(type) {
