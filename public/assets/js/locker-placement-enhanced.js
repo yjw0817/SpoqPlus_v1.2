@@ -674,6 +674,8 @@
             
             // 선택 상자 안의 락커들 선택
             selectLockersInBox();
+            
+            console.log('[Drag Select] Moving to:', mousePos);
             return;
         }
         
@@ -732,6 +734,7 @@
         
         // 드래그 선택 종료
         if (state.isDragSelecting) {
+            console.log('[Drag Select] Ended. Selected lockers:', state.selectedLockerIds.size);
             state.isDragSelecting = false;
             removeSelectionBox();
             return;
@@ -782,18 +785,30 @@
         }
         
         // 캔버스 빈 공간 클릭 (왼쪽 버튼)
-        if (event.button === 0 && event.target.id === 'lockerCanvas') {
-            // 드래그 선택 시작
-            const mousePos = getMousePosition(event);
-            state.isDragSelecting = true;
-            state.selectionBox.startX = mousePos.x;
-            state.selectionBox.startY = mousePos.y;
-            state.selectionBox.endX = mousePos.x;
-            state.selectionBox.endY = mousePos.y;
+        // SVG 캔버스나 그 자식 요소(배경 그리드 등)를 클릭했을 때
+        if (event.button === 0) {
+            const svg = document.getElementById('lockerCanvas');
+            const target = event.target;
             
-            // 기존 선택 해제 (Ctrl/Cmd 키가 없으면)
-            if (!event.ctrlKey && !event.metaKey) {
-                clearSelection();
+            // 락커가 아닌 요소를 클릭했을 때만 드래그 선택 시작
+            // (락커는 data-locker-id 속성을 가진 g 요소의 자식)
+            const isLockerElement = target.closest('[data-locker-id]');
+            
+            if (!isLockerElement && (target === svg || svg.contains(target))) {
+                // 드래그 선택 시작
+                const mousePos = getMousePosition(event);
+                state.isDragSelecting = true;
+                state.selectionBox.startX = mousePos.x;
+                state.selectionBox.startY = mousePos.y;
+                state.selectionBox.endX = mousePos.x;
+                state.selectionBox.endY = mousePos.y;
+                
+                // 기존 선택 해제 (Ctrl/Cmd 키가 없으면)
+                if (!event.ctrlKey && !event.metaKey) {
+                    clearSelection();
+                }
+                
+                console.log('[Drag Select] Started at:', mousePos);
             }
         }
     }
@@ -879,6 +894,13 @@
         removeSelectionBox();
         
         const svg = document.getElementById('lockerCanvas');
+        const lockersGroup = document.getElementById('lockersGroup');
+        
+        if (!lockersGroup) {
+            console.error('[Drag Select] lockersGroup not found');
+            return;
+        }
+        
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         
         const x = Math.min(state.selectionBox.startX, state.selectionBox.endX);
@@ -891,12 +913,17 @@
         rect.setAttribute('y', y);
         rect.setAttribute('width', width);
         rect.setAttribute('height', height);
-        rect.setAttribute('fill', 'rgba(74, 144, 226, 0.2)');
+        rect.setAttribute('fill', 'rgba(74, 144, 226, 0.3)');
         rect.setAttribute('stroke', '#4A90E2');
         rect.setAttribute('stroke-width', '2');
         rect.setAttribute('stroke-dasharray', '5,5');
+        rect.setAttribute('pointer-events', 'none'); // 마우스 이벤트 무시
+        rect.style.zIndex = '9999'; // 최상위 레이어
         
-        svg.appendChild(rect);
+        // lockersGroup 다음에 추가하여 락커들 위에 표시
+        lockersGroup.parentNode.insertBefore(rect, lockersGroup.nextSibling);
+        
+        console.log('[Drag Select] Box drawn:', {x, y, width, height});
     }
     
     function removeSelectionBox() {
@@ -912,8 +939,14 @@
         const maxX = Math.max(state.selectionBox.startX, state.selectionBox.endX);
         const maxY = Math.max(state.selectionBox.startY, state.selectionBox.endY);
         
+        // 선택 박스가 너무 작으면 무시 (최소 5픽셀)
+        if (Math.abs(maxX - minX) < 5 || Math.abs(maxY - minY) < 5) {
+            return;
+        }
+        
         // 현재 구역의 락커들만 체크
         const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
+        let selectedCount = 0;
         
         currentLockers.forEach(locker => {
             const type = state.lockerTypes.find(t => t.id === locker.typeId);
@@ -922,19 +955,26 @@
             const width = type.width * state.LOCKER_VISUAL_SCALE;
             const height = (state.currentViewMode === 'floor' ? type.depth : type.height) * state.LOCKER_VISUAL_SCALE;
             
-            // 락커가 선택 박스 안에 있는지 체크
-            const lockerCenterX = locker.x + width / 2;
-            const lockerCenterY = locker.y + height / 2;
+            // 락커의 경계가 선택 박스와 겹치는지 체크 (중심점 방식보다 정확)
+            const lockerMinX = locker.x;
+            const lockerMaxX = locker.x + width;
+            const lockerMinY = locker.y;
+            const lockerMaxY = locker.y + height;
             
-            if (lockerCenterX >= minX && lockerCenterX <= maxX &&
-                lockerCenterY >= minY && lockerCenterY <= maxY) {
+            // 선택 박스와 락커가 겹치는지 확인
+            const overlaps = !(lockerMaxX < minX || lockerMinX > maxX || 
+                              lockerMaxY < minY || lockerMinY > maxY);
+            
+            if (overlaps) {
                 state.selectedLockerIds.add(locker.id);
                 if (!state.selectedLocker) {
                     state.selectedLocker = locker;
                 }
+                selectedCount++;
             }
         });
         
+        console.log('[Drag Select] Selected', selectedCount, 'lockers in box');
         renderLockers();
     }
     
