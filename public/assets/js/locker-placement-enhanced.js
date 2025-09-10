@@ -326,28 +326,50 @@
         const svg = document.getElementById('lockerCanvas');
         if (!svg) return;
         
-        
-        // 기존 락커 그룹 제거
+        // 기존 락커 그룹 가져오기 또는 생성
         let lockersGroup = svg.querySelector('#lockersGroup');
-        if (lockersGroup) {
-            lockersGroup.remove();
+        if (!lockersGroup) {
+            lockersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            lockersGroup.id = 'lockersGroup';
+            svg.appendChild(lockersGroup);
         }
         
-        // 새 그룹 생성
-        lockersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        lockersGroup.id = 'lockersGroup';
-        
-        // 현재 구역의 락커만 렌더링 (state.selectedZone은 ID 문자열)
+        // 현재 구역의 락커만 렌더링
         const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
         
+        // 기존 락커 요소들을 Map으로 저장
+        const existingElements = new Map();
+        lockersGroup.querySelectorAll('[data-locker-id]').forEach(el => {
+            existingElements.set(el.getAttribute('data-locker-id'), el);
+        });
+        
+        // 현재 락커들 처리
+        const processedIds = new Set();
+        
         currentLockers.forEach(locker => {
-            const lockerElement = createLockerSVG(locker);
+            processedIds.add(locker.id);
+            
+            let lockerElement = existingElements.get(locker.id);
+            
             if (lockerElement) {
-                lockersGroup.appendChild(lockerElement);
+                // 기존 요소 업데이트 (위치와 회전만)
+                updateLockerPosition(lockerElement, locker);
+            } else {
+                // 새로운 락커 생성
+                lockerElement = createLockerSVG(locker);
+                if (lockerElement) {
+                    lockersGroup.appendChild(lockerElement);
+                }
             }
         });
         
-        svg.appendChild(lockersGroup);
+        // 더 이상 존재하지 않는 락커 제거
+        existingElements.forEach((element, id) => {
+            if (!processedIds.has(id)) {
+                element.style.opacity = '0';
+                setTimeout(() => element.remove(), 300);
+            }
+        });
         
         // 선택 UI 업데이트
         updateSelectionUI();
@@ -359,7 +381,7 @@
                 console.log('[RenderLockers] Executing autoFit');
                 autoFitLockers();
                 state.hasAutoFitted = true;
-            }, 200); // 시간을 늘려서 렌더링이 완료된 후 실행되도록
+            }, 200);
         }
     }
 
@@ -431,19 +453,17 @@
         g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`);
         g.style.cursor = 'move';
         
-        // 부드러운 이동 애니메이션 (드래그 중이 아닐 때만)
-        if (!state.isDragging || !state.draggedLockers.find(d => d.id === locker.id)) {
-            g.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
-        } else {
-            g.style.transition = 'none';
-        }
+        // CSS 스타일 적용
+        g.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
         
         // 새로 추가된 락커에 페이드인 효과
         if (locker.isNew) {
             g.style.opacity = '0';
-            setTimeout(() => {
-                g.style.opacity = '1';
-            }, 10);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    g.style.opacity = '1';
+                });
+            });
         }
         
         // 락커 사각형 (Locker4 스타일)
@@ -638,8 +658,13 @@
             y: mousePos.y - locker.y
         };
         
-        // 드래그 시작 시 애니메이션 일시적으로 비활성화
-        renderLockers();
+        // 드래그할 락커들의 transition 비활성화
+        state.selectedLockerIds.forEach(id => {
+            const element = document.querySelector(`[data-locker-id="${id}"]`);
+            if (element) {
+                element.style.transition = 'none';
+            }
+        });
         
         // 드래그할 락커들 설정
         state.draggedLockers = [];
@@ -729,18 +754,24 @@
         const hasCollision = checkCollisionForLocker(snappedX, snappedY, leaderLocker, leaderLocker.rotation || 0);
         
         if (!hasCollision) {
-            // 모든 선택된 락커 이동 (드래그 중이므로 즉시 이동)
-            state.draggedLockers.forEach(dragInfo => {
-                const locker = state.lockers.find(l => l.id === dragInfo.id);
-                if (locker) {
-                    locker.x = dragInfo.initialX + deltaX;
-                    locker.y = dragInfo.initialY + deltaY;
-                }
-            });
+            // requestAnimationFrame을 사용하여 부드럽게 업데이트
+            if (!state.animationFrameId) {
+                state.animationFrameId = requestAnimationFrame(() => {
+                    // 모든 선택된 락커 이동
+                    state.draggedLockers.forEach(dragInfo => {
+                        const locker = state.lockers.find(l => l.id === dragInfo.id);
+                        if (locker) {
+                            locker.x = dragInfo.initialX + deltaX;
+                            locker.y = dragInfo.initialY + deltaY;
+                        }
+                    });
+                    
+                    // 렌더링 업데이트
+                    renderLockers();
+                    state.animationFrameId = null;
+                });
+            }
         }
-        
-        // 렌더링 업데이트
-        renderLockers();
         
         // 정렬 가이드 표시
         showAlignmentGuides(leaderLocker);
@@ -774,11 +805,15 @@
         // 정렬 가이드 숨기기
         hideAlignmentGuides();
         
-        // 드래그가 끝난 후 애니메이션 재활성화하여 부드럽게 최종 위치로 이동
-        setTimeout(() => {
-            state.draggedLockers = [];
-            renderLockers();
-        }, 10);
+        // 드래그한 락커들의 transition 재활성화
+        movedLockers.forEach(dragInfo => {
+            const element = document.querySelector(`[data-locker-id="${dragInfo.id}"]`);
+            if (element) {
+                element.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
+            }
+        });
+        
+        state.draggedLockers = [];
         
         // 선택 UI 업데이트
         updateSelectionUI();
@@ -1330,6 +1365,56 @@
         svg.insertBefore(bg, svg.firstChild);
     }
 
+    // 락커 위치 업데이트 (DOM 재사용)
+    function updateLockerPosition(element, locker) {
+        const type = state.lockerTypes.find(t => t.id === locker.typeId);
+        if (!type) return;
+        
+        const scale = state.LOCKER_VISUAL_SCALE;
+        const x = parseFloat(locker.x) || 0;
+        const y = parseFloat(locker.y) || 0;
+        const rotation = parseFloat(locker.rotation) || 0;
+        const width = parseFloat(type.width) || 50;
+        const depth = parseFloat(type.depth) || 50;
+        
+        // Transform 속성만 업데이트 (애니메이션 발생)
+        element.setAttribute('transform', 
+            `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`
+        );
+        
+        // 선택 상태 업데이트
+        const isSelected = state.selectedLockerIds.has(locker.id);
+        const selectionRect = element.querySelector('.selection-highlight');
+        
+        if (isSelected && !selectionRect) {
+            // 선택 하이라이트 추가
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.classList.add('selection-highlight');
+            rect.setAttribute('x', -2);
+            rect.setAttribute('y', -2);
+            rect.setAttribute('width', (width * scale) + 4);
+            rect.setAttribute('height', (depth * scale) + 4);
+            rect.setAttribute('fill', 'none');
+            rect.setAttribute('stroke', '#4A90E2');
+            rect.setAttribute('stroke-width', '3');
+            rect.setAttribute('stroke-dasharray', '5,5');
+            rect.setAttribute('rx', 4 * scale);
+            
+            // 애니메이션 추가
+            const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            animate.setAttribute('attributeName', 'stroke-dashoffset');
+            animate.setAttribute('values', '0;10');
+            animate.setAttribute('dur', '0.5s');
+            animate.setAttribute('repeatCount', 'indefinite');
+            rect.appendChild(animate);
+            
+            element.appendChild(rect);
+        } else if (!isSelected && selectionRect) {
+            // 선택 하이라이트 제거
+            selectionRect.remove();
+        }
+    }
+    
     function updateSelectionUI() {
         // 선택 UI 업데이트 (삭제, 회전 버튼 등)
     }
