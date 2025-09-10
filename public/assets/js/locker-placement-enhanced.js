@@ -5,6 +5,55 @@
     'use strict';
 
     // ============================================
+    // 애니메이션 헬퍼
+    // ============================================
+    function animate(element, from, to, duration = 300) {
+        const startTime = performance.now();
+        const endTime = startTime + duration;
+        
+        function update() {
+            const now = performance.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            
+            // Cubic bezier easing (0.4, 0, 0.2, 1)
+            const easeProgress = cubicBezier(0.4, 0, 0.2, 1, progress);
+            
+            const currentX = from.x + (to.x - from.x) * easeProgress;
+            const currentY = from.y + (to.y - from.y) * easeProgress;
+            const currentRotation = from.rotation + (to.rotation - from.rotation) * easeProgress;
+            
+            const type = state.lockerTypes.find(t => t.id === to.typeId);
+            const scale = state.LOCKER_VISUAL_SCALE;
+            const width = type.width * scale;
+            const depth = type.depth * scale;
+            
+            element.setAttribute('transform', 
+                `translate(${currentX}, ${currentY}) rotate(${currentRotation}, ${width / 2}, ${depth / 2})`
+            );
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+    
+    // Cubic bezier 함수
+    function cubicBezier(x1, y1, x2, y2, t) {
+        // 간단한 근사치 계산
+        const cx = 3 * x1;
+        const bx = 3 * (x2 - x1) - cx;
+        const ax = 1 - cx - bx;
+        
+        const cy = 3 * y1;
+        const by = 3 * (y2 - y1) - cy;
+        const ay = 1 - cy - by;
+        
+        return ((ay * t + by) * t + cy) * t;
+    }
+    
+    // ============================================
     // 전역 상태 관리
     // ============================================
     const state = {
@@ -453,15 +502,13 @@
         g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`);
         g.style.cursor = 'move';
         
-        // CSS 스타일 적용
-        g.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
-        
         // 새로 추가된 락커에 페이드인 효과
         if (locker.isNew) {
             g.style.opacity = '0';
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     g.style.opacity = '1';
+                    g.style.transition = 'opacity 0.3s ease-in-out';
                 });
             });
         }
@@ -658,13 +705,7 @@
             y: mousePos.y - locker.y
         };
         
-        // 드래그할 락커들의 transition 비활성화
-        state.selectedLockerIds.forEach(id => {
-            const element = document.querySelector(`[data-locker-id="${id}"]`);
-            if (element) {
-                element.style.transition = 'none';
-            }
-        });
+        // 드래그 준비 (transition 제거 불필요 - JavaScript 애니메이션 사용)
         
         // 드래그할 락커들 설정
         state.draggedLockers = [];
@@ -754,23 +795,31 @@
         const hasCollision = checkCollisionForLocker(snappedX, snappedY, leaderLocker, leaderLocker.rotation || 0);
         
         if (!hasCollision) {
-            // requestAnimationFrame을 사용하여 부드럽게 업데이트
-            if (!state.animationFrameId) {
-                state.animationFrameId = requestAnimationFrame(() => {
-                    // 모든 선택된 락커 이동
-                    state.draggedLockers.forEach(dragInfo => {
-                        const locker = state.lockers.find(l => l.id === dragInfo.id);
-                        if (locker) {
-                            locker.x = dragInfo.initialX + deltaX;
-                            locker.y = dragInfo.initialY + deltaY;
-                        }
-                    });
+            // 드래그 중에는 DOM을 직접 업데이트 (renderLockers 호출하지 않음!)
+            state.draggedLockers.forEach(dragInfo => {
+                const element = document.querySelector(`[data-locker-id="${dragInfo.id}"]`);
+                if (element) {
+                    const newX = dragInfo.initialX + deltaX;
+                    const newY = dragInfo.initialY + deltaY;
                     
-                    // 렌더링 업데이트
-                    renderLockers();
-                    state.animationFrameId = null;
-                });
-            }
+                    // 락커의 타입 정보 가져오기
+                    const locker = state.lockers.find(l => l.id === dragInfo.id);
+                    const type = state.lockerTypes.find(t => t.id === locker.typeId);
+                    const scale = state.LOCKER_VISUAL_SCALE;
+                    const width = type.width * scale;
+                    const depth = type.depth * scale;
+                    const rotation = locker.rotation || 0;
+                    
+                    // Transform 직접 업데이트 (transition 없이 즉시 이동)
+                    element.setAttribute('transform', 
+                        `translate(${newX}, ${newY}) rotate(${rotation}, ${width / 2}, ${depth / 2})`
+                    );
+                    
+                    // 임시 위치 저장 (나중에 최종 위치로 업데이트)
+                    dragInfo.tempX = newX;
+                    dragInfo.tempY = newY;
+                }
+            });
         }
         
         // 정렬 가이드 표시
@@ -799,20 +848,39 @@
         // 드래그가 끝난 락커들 저장
         const movedLockers = [...state.draggedLockers];
         
-        state.isDragging = false;
-        state.showSelectionUI = true;
-        
         // 정렬 가이드 숨기기
         hideAlignmentGuides();
         
-        // 드래그한 락커들의 transition 재활성화
+        // 최종 위치를 state에 업데이트하고 부드럽게 스냅
         movedLockers.forEach(dragInfo => {
+            const locker = state.lockers.find(l => l.id === dragInfo.id);
             const element = document.querySelector(`[data-locker-id="${dragInfo.id}"]`);
-            if (element) {
-                element.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out';
+            
+            if (locker && element && dragInfo.tempX !== undefined && dragInfo.tempY !== undefined) {
+                // 현재 위치 (드래그 중 임시 위치)
+                const currentTransform = element.getAttribute('transform');
+                const currentMatch = currentTransform ? currentTransform.match(/translate\(([^,]+),([^)]+)\)/) : null;
+                const fromX = currentMatch ? parseFloat(currentMatch[1]) : locker.x;
+                const fromY = currentMatch ? parseFloat(currentMatch[2]) : locker.y;
+                
+                // 최종 스냅 위치로 부드럽게 애니메이션
+                const finalX = snapToGrid(dragInfo.tempX);
+                const finalY = snapToGrid(dragInfo.tempY);
+                
+                animate(element,
+                    { x: fromX, y: fromY, rotation: locker.rotation || 0, typeId: locker.typeId },
+                    { x: finalX, y: finalY, rotation: locker.rotation || 0, typeId: locker.typeId },
+                    200 // 빠른 스냅 애니메이션
+                );
+                
+                // state 업데이트
+                locker.x = finalX;
+                locker.y = finalY;
             }
         });
         
+        state.isDragging = false;
+        state.showSelectionUI = true;
         state.draggedLockers = [];
         
         // 선택 UI 업데이트
@@ -1366,7 +1434,7 @@
     }
 
     // 락커 위치 업데이트 (DOM 재사용)
-    function updateLockerPosition(element, locker) {
+    function updateLockerPosition(element, locker, shouldAnimate = true) {
         const type = state.lockerTypes.find(t => t.id === locker.typeId);
         if (!type) return;
         
@@ -1377,10 +1445,34 @@
         const width = parseFloat(type.width) || 50;
         const depth = parseFloat(type.depth) || 50;
         
-        // Transform 속성만 업데이트 (애니메이션 발생)
-        element.setAttribute('transform', 
-            `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`
-        );
+        if (shouldAnimate && !state.isDragging) {
+            // 현재 transform 파싱
+            const currentTransform = element.getAttribute('transform');
+            const currentMatch = currentTransform ? currentTransform.match(/translate\(([^,]+),([^)]+)\).*rotate\(([^,]+)/) : null;
+            
+            if (currentMatch) {
+                const fromX = parseFloat(currentMatch[1]) || 0;
+                const fromY = parseFloat(currentMatch[2]) || 0;
+                const fromRotation = parseFloat(currentMatch[3]) || 0;
+                
+                // 애니메이션으로 부드럽게 이동
+                animate(element, 
+                    { x: fromX, y: fromY, rotation: fromRotation, typeId: locker.typeId },
+                    { x, y, rotation, typeId: locker.typeId },
+                    300
+                );
+            } else {
+                // 첫 렌더링이면 즉시 설정
+                element.setAttribute('transform', 
+                    `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`
+                );
+            }
+        } else {
+            // 드래그 중이거나 애니메이션 불필요시 즉시 업데이트
+            element.setAttribute('transform', 
+                `translate(${x}, ${y}) rotate(${rotation}, ${(width * scale) / 2}, ${(depth * scale) / 2})`
+            );
+        }
         
         // 선택 상태 업데이트
         const isSelected = state.selectedLockerIds.has(locker.id);
@@ -1509,30 +1601,31 @@
     function rotateSelectedLockers() {
         if (state.selectedLockerIds.size === 0) return;
         
-        // 회전 애니메이션을 위한 플래그
-        state.isRotating = true;
-        
         // 45도씩 회전
         state.selectedLockerIds.forEach(id => {
             const locker = state.lockers.find(l => l.id === id);
-            if (locker) {
-                const newRotation = ((locker.rotation || 0) + 45) % 360;
+            const element = document.querySelector(`[data-locker-id="${id}"]`);
+            
+            if (locker && element) {
+                const oldRotation = locker.rotation || 0;
+                const newRotation = (oldRotation + 45) % 360;
                 
                 // 회전 후 충돌 체크
                 if (!checkCollisionForLocker(locker.x, locker.y, locker, newRotation)) {
+                    // 부드러운 회전 애니메이션
+                    animate(element,
+                        { x: locker.x, y: locker.y, rotation: oldRotation, typeId: locker.typeId },
+                        { x: locker.x, y: locker.y, rotation: newRotation, typeId: locker.typeId },
+                        300
+                    );
+                    
+                    // state 업데이트
                     locker.rotation = newRotation;
                 } else {
                     console.log('[Rotation] Collision detected for locker:', locker.id);
                 }
             }
         });
-        
-        renderLockers();
-        
-        // 회전 애니메이션 완료 후 플래그 해제
-        setTimeout(() => {
-            state.isRotating = false;
-        }, 300);
     }
 
     function deleteLockerType(type) {
