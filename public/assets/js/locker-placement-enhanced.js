@@ -663,6 +663,20 @@
             return;
         }
         
+        // 드래그 선택 상자 처리
+        if (state.isDragSelecting) {
+            const mousePos = getMousePosition(event);
+            state.selectionBox.endX = mousePos.x;
+            state.selectionBox.endY = mousePos.y;
+            
+            // 선택 상자 그리기
+            drawSelectionBox();
+            
+            // 선택 상자 안의 락커들 선택
+            selectLockersInBox();
+            return;
+        }
+        
         if (!state.isDragging || state.draggedLockers.length === 0) return;
         
         const mousePos = getMousePosition(event);
@@ -686,14 +700,19 @@
         const deltaX = snappedX - leaderInfo.initialX;
         const deltaY = snappedY - leaderInfo.initialY;
         
-        // 모든 선택된 락커 이동
-        state.draggedLockers.forEach(dragInfo => {
-            const locker = state.lockers.find(l => l.id === dragInfo.id);
-            if (locker) {
-                locker.x = dragInfo.initialX + deltaX;
-                locker.y = dragInfo.initialY + deltaY;
-            }
-        });
+        // 충돌 체크 (리더 락커 기준)
+        const hasCollision = checkCollisionForLocker(snappedX, snappedY, leaderLocker, leaderLocker.rotation || 0);
+        
+        if (!hasCollision) {
+            // 모든 선택된 락커 이동
+            state.draggedLockers.forEach(dragInfo => {
+                const locker = state.lockers.find(l => l.id === dragInfo.id);
+                if (locker) {
+                    locker.x = dragInfo.initialX + deltaX;
+                    locker.y = dragInfo.initialY + deltaY;
+                }
+            });
+        }
         
         // 렌더링 업데이트
         renderLockers();
@@ -708,6 +727,13 @@
             state.isPanning = false;
             const svg = document.getElementById('lockerCanvas');
             svg.style.cursor = 'crosshair';
+            return;
+        }
+        
+        // 드래그 선택 종료
+        if (state.isDragSelecting) {
+            state.isDragSelecting = false;
+            removeSelectionBox();
             return;
         }
         
@@ -843,6 +869,147 @@
         setTimeout(() => {
             autoFitLockers();
         }, 50);
+    }
+
+    // ============================================
+    // 드래그 선택 박스 관련 함수들
+    // ============================================
+    function drawSelectionBox() {
+        // 기존 선택 박스 제거
+        removeSelectionBox();
+        
+        const svg = document.getElementById('lockerCanvas');
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        
+        const x = Math.min(state.selectionBox.startX, state.selectionBox.endX);
+        const y = Math.min(state.selectionBox.startY, state.selectionBox.endY);
+        const width = Math.abs(state.selectionBox.endX - state.selectionBox.startX);
+        const height = Math.abs(state.selectionBox.endY - state.selectionBox.startY);
+        
+        rect.setAttribute('id', 'selectionBox');
+        rect.setAttribute('x', x);
+        rect.setAttribute('y', y);
+        rect.setAttribute('width', width);
+        rect.setAttribute('height', height);
+        rect.setAttribute('fill', 'rgba(74, 144, 226, 0.2)');
+        rect.setAttribute('stroke', '#4A90E2');
+        rect.setAttribute('stroke-width', '2');
+        rect.setAttribute('stroke-dasharray', '5,5');
+        
+        svg.appendChild(rect);
+    }
+    
+    function removeSelectionBox() {
+        const box = document.getElementById('selectionBox');
+        if (box) {
+            box.remove();
+        }
+    }
+    
+    function selectLockersInBox() {
+        const minX = Math.min(state.selectionBox.startX, state.selectionBox.endX);
+        const minY = Math.min(state.selectionBox.startY, state.selectionBox.endY);
+        const maxX = Math.max(state.selectionBox.startX, state.selectionBox.endX);
+        const maxY = Math.max(state.selectionBox.startY, state.selectionBox.endY);
+        
+        // 현재 구역의 락커들만 체크
+        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
+        
+        currentLockers.forEach(locker => {
+            const type = state.lockerTypes.find(t => t.id === locker.typeId);
+            if (!type) return;
+            
+            const width = type.width * state.LOCKER_VISUAL_SCALE;
+            const height = (state.currentViewMode === 'floor' ? type.depth : type.height) * state.LOCKER_VISUAL_SCALE;
+            
+            // 락커가 선택 박스 안에 있는지 체크
+            const lockerCenterX = locker.x + width / 2;
+            const lockerCenterY = locker.y + height / 2;
+            
+            if (lockerCenterX >= minX && lockerCenterX <= maxX &&
+                lockerCenterY >= minY && lockerCenterY <= maxY) {
+                state.selectedLockerIds.add(locker.id);
+                if (!state.selectedLocker) {
+                    state.selectedLocker = locker;
+                }
+            }
+        });
+        
+        renderLockers();
+    }
+    
+    // ============================================
+    // 충돌 감지
+    // ============================================
+    function checkCollisionForLocker(x, y, locker, rotation = 0) {
+        const type = state.lockerTypes.find(t => t.id === locker.typeId);
+        if (!type) return false;
+        
+        const width = type.width * state.LOCKER_VISUAL_SCALE;
+        const height = (state.currentViewMode === 'floor' ? type.depth : type.height) * state.LOCKER_VISUAL_SCALE;
+        
+        // 회전된 경계 계산
+        const bounds = getRotatedBounds(x, y, width, height, rotation);
+        
+        // 다른 락커들과 충돌 체크
+        const currentLockers = state.lockers.filter(l => 
+            l.zoneId === state.selectedZone && l.id !== locker.id
+        );
+        
+        for (const other of currentLockers) {
+            const otherType = state.lockerTypes.find(t => t.id === other.typeId);
+            if (!otherType) continue;
+            
+            const otherWidth = otherType.width * state.LOCKER_VISUAL_SCALE;
+            const otherHeight = (state.currentViewMode === 'floor' ? otherType.depth : otherType.height) * state.LOCKER_VISUAL_SCALE;
+            const otherBounds = getRotatedBounds(other.x, other.y, otherWidth, otherHeight, other.rotation || 0);
+            
+            if (boundsOverlap(bounds, otherBounds)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    function getRotatedBounds(x, y, width, height, rotation) {
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+        const rad = (rotation * Math.PI) / 180;
+        
+        // 회전된 모서리 계산
+        const corners = [
+            { x: x, y: y },
+            { x: x + width, y: y },
+            { x: x + width, y: y + height },
+            { x: x, y: y + height }
+        ];
+        
+        const rotatedCorners = corners.map(corner => {
+            const dx = corner.x - centerX;
+            const dy = corner.y - centerY;
+            return {
+                x: centerX + dx * Math.cos(rad) - dy * Math.sin(rad),
+                y: centerY + dx * Math.sin(rad) + dy * Math.cos(rad)
+            };
+        });
+        
+        // 경계 상자 계산
+        const minX = Math.min(...rotatedCorners.map(c => c.x));
+        const maxX = Math.max(...rotatedCorners.map(c => c.x));
+        const minY = Math.min(...rotatedCorners.map(c => c.y));
+        const maxY = Math.max(...rotatedCorners.map(c => c.y));
+        
+        return { minX, maxX, minY, maxY };
+    }
+    
+    function boundsOverlap(bounds1, bounds2) {
+        // 인접 배치는 허용 (1픽셀 여유)
+        const tolerance = 1;
+        return !(bounds1.maxX <= bounds2.minX + tolerance ||
+                bounds2.maxX <= bounds1.minX + tolerance ||
+                bounds1.maxY <= bounds2.minY + tolerance ||
+                bounds2.maxY <= bounds1.minY + tolerance);
     }
 
     // ============================================
@@ -1176,10 +1343,20 @@
     }
 
     function rotateSelectedLockers() {
+        if (state.selectedLockerIds.size === 0) return;
+        
+        // 45도씩 회전
         state.selectedLockerIds.forEach(id => {
             const locker = state.lockers.find(l => l.id === id);
             if (locker) {
-                locker.rotation = (locker.rotation + 90) % 360;
+                const newRotation = ((locker.rotation || 0) + 45) % 360;
+                
+                // 회전 후 충돌 체크
+                if (!checkCollisionForLocker(locker.x, locker.y, locker, newRotation)) {
+                    locker.rotation = newRotation;
+                } else {
+                    console.log('[Rotation] Collision detected for locker:', locker.id);
+                }
             }
         });
         renderLockers();
