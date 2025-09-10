@@ -354,10 +354,12 @@
         
         // 초기 로드 시 락커들을 중앙에 배치
         if (currentLockers.length > 0 && !state.hasAutoFitted) {
+            console.log('[RenderLockers] Scheduling autoFit for initial load');
             setTimeout(() => {
+                console.log('[RenderLockers] Executing autoFit');
                 autoFitLockers();
                 state.hasAutoFitted = true;
-            }, 100);
+            }, 200); // 시간을 늘려서 렌더링이 완료된 후 실행되도록
         }
     }
 
@@ -961,8 +963,12 @@
     }
 
     function autoFitLockers() {
-        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone?.id);
+        console.log('[AutoFit] Starting with zone:', state.selectedZone);
+        const currentLockers = state.lockers.filter(l => l.zoneId === state.selectedZone);
+        console.log('[AutoFit] Found lockers:', currentLockers.length);
+        
         if (currentLockers.length === 0) {
+            console.log('[AutoFit] No lockers found, resetting zoom');
             resetZoom();
             return;
         }
@@ -987,15 +993,25 @@
         const contentWidth = maxX - minX + padding * 2;
         const contentHeight = maxY - minY + padding * 2;
         
+        console.log('[AutoFit] Bounds:', { minX, minY, maxX, maxY });
+        console.log('[AutoFit] Content size:', { contentWidth, contentHeight });
+        
         const scaleX = state.canvasWidth / contentWidth;
         const scaleY = state.canvasHeight / contentHeight;
         state.zoomLevel = Math.min(scaleX, scaleY, 1);
         
+        console.log('[AutoFit] Zoom level set to:', state.zoomLevel);
+        
+        // 중앙 정렬을 위한 오프셋 계산
+        const centerX = (state.canvasWidth / state.zoomLevel - (maxX - minX)) / 2;
+        const centerY = (state.canvasHeight / state.zoomLevel - (maxY - minY)) / 2;
+        
         state.panOffset = {
-            x: minX - padding,
-            y: minY - padding
+            x: -(minX - centerX),
+            y: -(minY - centerY)
         };
         
+        console.log('[AutoFit] Pan offset:', state.panOffset);
         applyZoom();
     }
 
